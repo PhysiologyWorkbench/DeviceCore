@@ -156,10 +156,17 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     private var rx: CBCharacteristic?
     private var ready = false
 
+    /// Every characteristic discovered across all services, keyed by UUID — not
+    /// just the endpoint resolver's tx/rx match — so `read(characteristic:)` can
+    /// reach e.g. the standard Battery Level characteristic.
+    private var discoveredCharacteristics: [CBUUID: CBCharacteristic] = [:]
+
     /// Waiters for a write-with-response ACK, FIFO.
     private var responseWaiters: [CheckedContinuation<Bool, Error>] = []
     /// Queued write-without-response payloads awaiting link readiness, FIFO.
     private var pendingWrites: [(Data, CheckedContinuation<Bool, Error>)] = []
+    /// Waiters for a characteristic read, FIFO per characteristic.
+    private var readWaiters: [CBUUID: [CheckedContinuation<Data, Error>]] = [:]
 
     init(peripheral: CBPeripheral, central: CBCentralManager, resolver: EndpointResolver, queue: DispatchQueue) {
         self.peripheral = peripheral
@@ -190,6 +197,9 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         let waiters = responseWaiters + pendingWrites.map { $0.1 }
         responseWaiters.removeAll(); pendingWrites.removeAll()
         waiters.forEach { $0.resume(throwing: TransportError.notConnected) }
+        let readers = readWaiters.values.flatMap { $0 }
+        readWaiters.removeAll()
+        readers.forEach { $0.resume(throwing: TransportError.notConnected) }
     }
 
     // MARK: DeviceConnection
@@ -223,6 +233,21 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         }
     }
 
+    func read(characteristic: CBUUID) async throws -> Data {
+        try await withCheckedThrowingContinuation { cont in
+            queue.async {
+                guard self.ready else {
+                    cont.resume(throwing: TransportError.notConnected); return
+                }
+                guard let char = self.discoveredCharacteristics[characteristic] else {
+                    cont.resume(throwing: TransportError.writeFailed("characteristic not discovered")); return
+                }
+                self.readWaiters[characteristic, default: []].append(cont)
+                self.peripheral.readValue(for: char)
+            }
+        }
+    }
+
     func disconnect() async {
         queue.async { self.central.cancelPeripheralConnection(self.peripheral) }
     }
@@ -237,6 +262,9 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        for characteristic in service.characteristics ?? [] {
+            discoveredCharacteristics[characteristic.uuid] = characteristic
+        }
         guard rx == nil else { return }
         // The injected resolver binds this service's endpoints, or returns nil to
         // skip it (wait for a later service). `tx` may be nil for notify-only
@@ -256,8 +284,16 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard characteristic == rx, let data = characteristic.value else { return }
-        inboundContinuation.yield(data)
+        if characteristic == rx, let data = characteristic.value {
+            inboundContinuation.yield(data)
+        }
+        guard !readWaiters[characteristic.uuid, default: []].isEmpty else { return }
+        let cont = readWaiters[characteristic.uuid]!.removeFirst()
+        if let error {
+            cont.resume(throwing: TransportError.writeFailed(error.localizedDescription))
+        } else {
+            cont.resume(returning: characteristic.value ?? Data())
+        }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {

@@ -107,6 +107,12 @@ public protocol DeviceConnection: Sendable {
     /// offers it. Returns whether the bytes were sent (always true for `.wait`).
     @discardableResult
     func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool
+    /// Reads a GATT characteristic's current value directly (e.g. standard Battery
+    /// Level, `0x180F`/`0x2A19`) — for values that are read, not pushed over a
+    /// serial notify channel. The characteristic must have been discovered
+    /// (any service found during connect setup qualifies, not only the endpoint
+    /// resolver's match).
+    func read(characteristic: CBUUID) async throws -> Data
     func disconnect() async
 }
 
