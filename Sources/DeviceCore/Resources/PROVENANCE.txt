@@ -1,0 +1,6 @@
+Source: buttplugio/buttplug device-config build-config/buttplug-device-config-v4.json
+Upstream commit: 385963ae
+version:
+  major: 4
+  minor: 148
+Vendored: 2026-07-22
