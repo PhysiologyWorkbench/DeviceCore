@@ -3,7 +3,7 @@
 /// and the one firmware-dependent identifier rule. Everything else in the catalog
 /// is generic Buttplug-config parsing.
 enum Lovense {
-    /// Key of the protocol node inside `buttplug-device-config-v4.json`.
+    /// Key of the protocol node inside `buttplug-device-config-v5.json`.
     static let protocolKey = "lovense"
 
     /// Mirrors Buttplug's sole firmware-dependent identifier remap: a Flexer

@@ -1,7 +1,7 @@
 {
   "version": {
-    "major": 4,
-    "minor": 148
+    "major": 5,
+    "minor": 5
   },
   "protocols": {
     "activejoy": {
@@ -838,7 +838,7 @@
             "id": "a8185061-6d41-4eea-bc24-1ff1c5c405b9",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -892,6 +892,13 @@
           "name": "Fluffer G2G"
         },
         {
+          "id": "f0ccd408-ad3e-4eaf-a2e0-b686cb8f3687",
+          "identifier": [
+            "FDPR"
+          ],
+          "name": "Fluffer Rock Hard Power Ring"
+        },
+        {
           "features": [
             {
               "id": "d3f05e7a-a436-4ede-bce9-8ff56d1978d0",
@@ -920,7 +927,8 @@
           ],
           "id": "c469ba54-e0c1-43dc-b8b1-851b7792bf04",
           "identifier": [
-            "MBO"
+            "MBO",
+            "MB Controller"
           ],
           "name": "MotorBunny Classic (Fluffer version)"
         },
@@ -1337,7 +1345,7 @@
             "id": "d3985f07-f95a-4f72-859e-8b0ac76f251f",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -1495,6 +1503,7 @@
               "QCPW",
               "SN80",
               "BGCD",
+              "AK71",
               "TFG1",
               "GK27",
               "GX27",
@@ -1960,13 +1969,6 @@
             "A531"
           ],
           "name": "Adorime Pink Touch"
-        },
-        {
-          "id": "20bfb1be-613b-47de-ae68-a6e8be7f493d",
-          "identifier": [
-            "YXSJ"
-          ],
-          "name": "Adorime Cock Ring"
         },
         {
           "features": [
@@ -2461,11 +2463,11 @@
               }
             },
             {
-              "description": "vibrate",
-              "id": "3854e366-6eb9-4947-bc90-e246146bec11",
+              "description": "rotate",
+              "id": "10007a9c-8e51-4d38-b55a-03e09954b0d2",
               "index": 1,
               "output": {
-                "vibrate": {
+                "rotate": {
                   "value": [
                     0,
                     100
@@ -3879,6 +3881,59 @@
         {
           "features": [
             {
+              "description": "Vibrate",
+              "id": "ed25baca-3647-489d-96a8-9cf528dfbe34",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Vibrate",
+              "id": "9ffd40ba-f94e-41e2-ae42-83fd29f9d6a1",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "0b444666-695e-4ee3-a7a2-33f22259f80e",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "20bfb1be-613b-47de-ae68-a6e8be7f493d",
+          "identifier": [
+            "YXSJ"
+          ],
+          "name": "Adorime Cock Ring"
+        },
+        {
+          "features": [
+            {
               "description": "vibrate",
               "id": "2b5fdcd4-3b35-4939-b086-950a827141e1",
               "index": 0,
@@ -4758,6 +4813,889 @@
         "name": "Hismith Mini device"
       }
     },
+    "honeyplaybox": {
+      "communication": [
+        {
+          "btle": {
+            "names": [
+              "JXT002",
+              "HPB-393-1",
+              "HPB-0520",
+              "HONEY-835",
+              "HPB-399",
+              "HPB-398",
+              "HPB-437",
+              "HPB-296",
+              "HPB-297",
+              "HPB-376-1",
+              "JXT001",
+              "HPB-DDT003",
+              "HPB-391",
+              "HPB-472",
+              "HPB-393",
+              "HBP-JXT001",
+              "HPB-376",
+              "AP-22-892",
+              "HPB-S302",
+              "HPB-501"
+            ],
+            "services": {
+              "0000180f-0000-1000-8000-00805f9b34fb": {
+                "rxblebattery": "00002a19-0000-1000-8000-00805f9b34fb"
+              },
+              "0000ff12-0000-1000-8000-00805f9b34fb": {
+                "rx": "0000ff02-0000-1000-8000-00805f9b34fb",
+                "tx": "0000ff03-0000-1000-8000-00805f9b34fb"
+              }
+            }
+          }
+        }
+      ],
+      "configurations": [
+        {
+          "id": "da2a5051-be98-4c1b-b8a9-03836fadfd0e",
+          "identifier": [
+            "HPB-0520"
+          ],
+          "name": "Honey Play Box Pearl 2"
+        },
+        {
+          "id": "71f44e23-43b9-491b-9e7c-f38437619147",
+          "identifier": [
+            "HONEY-835"
+          ],
+          "name": "Honey Play Box Lili"
+        },
+        {
+          "id": "c205e707-9561-4016-97aa-0bde609b0edc",
+          "identifier": [
+            "HPB-398"
+          ],
+          "name": "Honey Play Box Pleasure Pivot"
+        },
+        {
+          "id": "0a9c43fb-2d58-4af9-aef2-60f48c6e7707",
+          "identifier": [
+            "HPB-296"
+          ],
+          "name": "Honey Play Box Anello"
+        },
+        {
+          "id": "0a9c43fb-2d58-4af9-aef2-60f48c6e7707",
+          "identifier": [
+            "HBP-JXT001"
+          ],
+          "name": "Honey Play Box Puff"
+        },
+        {
+          "features": [
+            {
+              "id": "a92be3ba-ac13-41b9-b199-4396c658208e",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "609f4878-840b-4240-a3d4-08b687527bf6",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "dff15849-789e-49ee-afdd-73099d606e1c",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "af0ddeec-2e45-41d1-953d-9052dd960ffb",
+          "identifier": [
+            "JXT002"
+          ],
+          "name": "Honey Play Box Vibrosa"
+        },
+        {
+          "features": [
+            {
+              "id": "7b6fdb3a-578e-4af8-aa5f-fa6b0cc38b46",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "76647712-0a86-4391-9812-c5a2c4717264",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "372549a4-2665-4bc8-9aac-f5f993f96208",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "aa161c35-4074-441d-8277-d56cf56f3610",
+          "identifier": [
+            "HPB-393"
+          ],
+          "name": "Honey Play Box Oly"
+        },
+        {
+          "features": [
+            {
+              "id": "7b6fdb3a-578e-4af8-aa5f-fa6b0cc38b46",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "76647712-0a86-4391-9812-c5a2c4717264",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "372549a4-2665-4bc8-9aac-f5f993f96208",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "aa161c35-4074-441d-8277-d56cf56f3610",
+          "identifier": [
+            "HPB-393-1"
+          ],
+          "name": "Honey Play Box Oly 2"
+        },
+        {
+          "features": [
+            {
+              "id": "6c0b2f97-df98-4469-807a-ae55aa46b420",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "617a7f86-3d2d-45cb-ac63-6bb221ab3758",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "c963e21c-e25f-4580-9b54-15e7a2e1ba66",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "7d78a68f-5825-4726-9827-ddaac5a325b2",
+          "identifier": [
+            "HPB-399"
+          ],
+          "name": "Honey Play Box Cyrus"
+        },
+        {
+          "features": [
+            {
+              "description": "Finger-Tapping Motion",
+              "id": "952c04c1-29ef-40ae-bce2-3ca171245dc2",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "4c68b1a3-4a87-41a0-ad83-792cc6ee7664",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "81276f3c-73ec-4395-b192-55b65a91ed2a",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "4c007d74-ce06-4d33-b69f-aea6f4273ba4",
+          "identifier": [
+            "HPB-437"
+          ],
+          "name": "Honey Play Box Fortexa"
+        },
+        {
+          "features": [
+            {
+              "id": "c83c1f8e-f187-4280-bea9-0353885c13cc",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Finger-Tapping Motion",
+              "id": "1f7425be-4fe6-4452-8388-81b81bc9939f",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "8a81f70c-9086-4ffa-be66-13bd33ad3d18",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "75d298b3-2ce2-4e1e-ae8d-856cde59f10f",
+          "identifier": [
+            "HPB-297"
+          ],
+          "name": "Honey Play Box Temp"
+        },
+        {
+          "features": [
+            {
+              "description": "Tongue Motion",
+              "id": "24e11b02-ddb2-44f5-8bf4-0b1bf9a7f574",
+              "index": 0,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "0a576c3b-6e73-4c46-ae55-8a11e892d8fe",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "d57d944c-1031-464e-8489-d16e9bb26a93",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "a413bfe8-d8a9-49b9-9f31-0c1b96bda69c",
+          "identifier": [
+            "HPB-376-1"
+          ],
+          "name": "Honey Play Box Joi Thrust 2"
+        },
+        {
+          "features": [
+            {
+              "id": "1da7d7ef-b0b9-43d7-a717-4543b49eee05",
+              "index": 0,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Tongue Motion",
+              "id": "3f574d81-b96b-4838-b7a4-3203b2c1afc8",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "fe4d12d4-195e-44d7-aa79-353f1bd153dc",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "5b27250b-2370-4014-85a1-ef59287a8ea9",
+          "identifier": [
+            "HPB-376"
+          ],
+          "name": "Honey Play Box Joi Thrust"
+        },
+        {
+          "features": [
+            {
+              "id": "ef04a42e-89a3-4a2b-95c3-545d17d35c37",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "41cb0fc3-2d4f-47cd-82f4-c5db5d04303c",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "a6e1a9b9-e4c3-489c-bfc2-52dd79828911",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "58253ea4-01b9-4b00-a6cd-b92264f34eb2",
+          "identifier": [
+            "JXT001"
+          ],
+          "name": "Honey Play Box Vibrosa Mini"
+        },
+        {
+          "features": [
+            {
+              "id": "0432c17b-c8e6-49d2-b9cf-681f151fe3b2",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Finger-Tapping Motion",
+              "id": "ee368e93-ec17-46c2-a940-6cf0dca7cb11",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "25b81d5c-1269-41ea-b893-9aef1751f726",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "f2fb2c01-eb77-4e96-86f1-f3155674aac1",
+          "identifier": [
+            "HPB-DDT003"
+          ],
+          "name": "Honey Play Box Tressa"
+        },
+        {
+          "features": [
+            {
+              "id": "ff5a2649-b36d-443e-8f9c-fa6e4fe52d76",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Finger-Tapping Motion",
+              "id": "fd880ea6-5841-4e22-9412-b7d98cfd22dc",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "469140b6-e1ed-4c9b-9a0c-080c24cc0de5",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "2a4c4340-a135-4ea6-801e-2fb361beafaf",
+          "identifier": [
+            "HPB-391"
+          ],
+          "name": "Honey Play Box Trilux"
+        },
+        {
+          "features": [
+            {
+              "id": "8057dc14-df15-4397-87be-85c593821780",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "c19bb975-5fca-46cf-8f5b-f4037c42f8de",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "faefd98f-47b9-4aa8-9455-eba7d80e039d",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "0eb9cc33-e2b7-4fd5-8a37-f17e5307f01f",
+          "identifier": [
+            "HPB-472"
+          ],
+          "name": "Honey Play Box Melody"
+        },
+        {
+          "features": [
+            {
+              "id": "38974501-922d-415e-a36d-dc35bd9f8983",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "af19930b-5a3f-4cc3-9c65-9296a295a53f",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "1dd5a5f3-304c-4dcb-b076-980e58953873",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "ed3da58c-bf63-470b-9ebc-3b5be93c6ca2",
+          "identifier": [
+            "AP-22-892"
+          ],
+          "name": "Honey Play Box Ryder"
+        },
+        {
+          "features": [
+            {
+              "id": "148d7d2d-2103-4390-bb97-dc6757750231",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "a4afa1e7-ca5a-406c-896f-c56fa344f56a",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "3c5b6bda-5038-47b5-9a96-45017a655260",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "bb48fa76-2cc8-43ea-8b84-3c1e29cdffc2",
+          "identifier": [
+            "HPB-S302"
+          ],
+          "name": "Honey Play Box Frenzy"
+        },
+        {
+          "features": [
+            {
+              "id": "2fa7c25d-5d41-4df9-a62d-339d9b2c861c",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "49f0539b-1cff-4a9f-b964-1f8dcdf3b889",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Battery Level",
+              "id": "7a04f849-0f4c-4635-93c1-8fe0631d3364",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "c1f4ccbe-bd43-464a-8558-60bec96fce77",
+          "identifier": [
+            "HPB-501"
+          ],
+          "name": "Honey Play Box Noah"
+        }
+      ],
+      "defaults": {
+        "features": [
+          {
+            "id": "b29ed0d1-5eab-41e0-bdb9-487b34f979e4",
+            "index": 0,
+            "output": {
+              "vibrate": {
+                "value": [
+                  0,
+                  100
+                ]
+              }
+            }
+          },
+          {
+            "description": "Battery Level",
+            "id": "acfaa268-2fc3-4192-ac90-16d64f598999",
+            "index": 1,
+            "input": {
+              "battery": {
+                "command": [
+                  "Read"
+                ],
+                "value": [
+                  [
+                    0,
+                    100
+                  ]
+                ]
+              }
+            }
+          }
+        ],
+        "id": "1eca1a4f-eeae-4da0-a9b6-a8dd1bc38f74",
+        "name": "Honey Play Box Device"
+      }
+    },
     "htk_bm": {
       "communication": [
         {
@@ -4814,7 +5752,8 @@
             "names": [
               "26-021-B",
               "SML-2310-SZ-B",
-              "ASF-001-BT-R"
+              "ASF-001-BT-R",
+              "IJVB-W10-BT-RX"
             ],
             "services": {
               "0000ffa0-0000-1000-8000-00805f9b34fb": {
@@ -4885,6 +5824,39 @@
             "ASF-001-BT-R"
           ],
           "name": "Defyeah Horizontal Sex Machine ASFO16"
+        },
+        {
+          "features": [
+            {
+              "id": "235cd946-2e47-4ec6-9a5c-93ba9618cdd8",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    3
+                  ]
+                }
+              }
+            },
+            {
+              "id": "8149e48b-847f-4744-8dc6-fb263637b60d",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    3
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "abb51f0e-7962-454e-8584-12099258e1f1",
+          "identifier": [
+            "IJVB-W10-BT-RX"
+          ],
+          "name": "Bestvibe Rotational Vibration"
         }
       ],
       "defaults": {
@@ -5028,8 +6000,10 @@
               "J-VortexTongue",
               "J-Velocity",
               "JOYHUB-ROSELLA2",
+              "J-ROSELLA2",
               "J-VibSiren",
               "J-ElixirEgg",
+              "J-Volt",
               "J-RetroGuard",
               "J-TrueForm",
               "J-TrueForm3",
@@ -5052,6 +6026,7 @@
               "J-ROSELLA3",
               "J-Mackay",
               "J-Rowdy3",
+              "J-Rowdy",
               "J-Eclipse",
               "J-DukeDazzle2",
               "J-Scarlett",
@@ -5079,7 +6054,29 @@
               "J-Pinhead",
               "J-Victor",
               "J-Mirage3",
-              "J-Maelstrom"
+              "J-Maelstrom",
+              "J-Dodge",
+              "J-Pyt",
+              "J-Perseus",
+              "J-Pogo",
+              "J-Pyro",
+              "J-MaxSensr",
+              "J-Diego",
+              "J-RoseVore",
+              "J-Rosethorn2",
+              "J-Pak",
+              "J-VeeLips",
+              "J-Veeva2",
+              "J-Punch",
+              "J-RoseStar",
+              "J-Vows",
+              "J-Pixel",
+              "J-SyncFlare",
+              "J-AuroraII",
+              "J-Vortus",
+              "J-Phantom",
+              "J-Thelma",
+              "J-Mystor"
             ],
             "services": {
               "0000ffa0-0000-1000-8000-00805f9b34fb": {
@@ -5091,9 +6088,17 @@
       ],
       "configurations": [
         {
+          "id": "85484a03-2782-4b6b-901d-68854fa08111",
+          "identifier": [
+            "J-Volt"
+          ],
+          "name": "JoyHub Valora"
+        },
+        {
           "id": "5b78e797-3ff6-4ca8-be15-28a1f3983dca",
           "identifier": [
-            "JOYHUB-ROSELLA2"
+            "JOYHUB-ROSELLA2",
+            "J-ROSELLA2"
           ],
           "name": "JoyHub Rosella 2"
         },
@@ -5147,6 +6152,32 @@
           "name": "JoyHub Rhythmic 3"
         },
         {
+          "features": [
+            {
+              "id": "24a7fa13-8a0a-462c-9414-b673edac3edf",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "4f8c159e-667c-400f-ae67-b030d1f364d7",
+              "index": 6,
+              "output": {
+                "led": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
+            }
+          ],
           "id": "907042dc-2681-46a0-9a49-3b8564faa41a",
           "identifier": [
             "J-Rainbow"
@@ -5161,6 +6192,32 @@
           "name": "JoyHub Black Bull"
         },
         {
+          "features": [
+            {
+              "id": "ab7538db-d2a0-4dc6-92fa-68dbab9fd42f",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "ddf87591-51ac-44b9-adff-288bd5e4b386",
+              "index": 6,
+              "output": {
+                "led": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
+            }
+          ],
           "id": "1b560be9-462d-4e08-adb5-2a38690e6ab2",
           "identifier": [
             "J-Peacock"
@@ -5222,6 +6279,13 @@
             "J-Rowdy3"
           ],
           "name": "JoyHub Rowdy 3"
+        },
+        {
+          "id": "0d698855-a0d6-4ee8-80fb-4861cea0c8f4",
+          "identifier": [
+            "J-Rowdy"
+          ],
+          "name": "JoyHub Rowdy"
         },
         {
           "id": "26bab7e2-0a38-4790-bdf0-8d9e1927106a",
@@ -5453,6 +6517,18 @@
                   ]
                 }
               }
+            },
+            {
+              "id": "c99ebac0-a315-45a1-8403-562c79b37f1d",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
           "id": "380428d0-73a4-4437-bf48-fb6b26663d1d",
@@ -5620,15 +6696,11 @@
         {
           "features": [
             {
-              "id": "7ccaa3e6-d5d3-441b-9b2d-4b97eeccbb1e",
-              "index": 3
-            },
-            {
-              "description": "Air Pump",
+              "description": "Suction Vibrator",
               "id": "0d3b3010-d438-4899-b1c2-d81bff0c6714",
-              "index": 4,
+              "index": 0,
               "output": {
-                "constrict": {
+                "vibrate": {
                   "value": [
                     0,
                     255
@@ -5665,6 +6737,19 @@
                   "value": [
                     0,
                     255
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Heater",
+              "id": "3c6dd010-b9b5-4cb0-8e99-2f1ed4acfe9b",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
                   ]
                 }
               }
@@ -6014,6 +7099,19 @@
                   ]
                 }
               }
+            },
+            {
+              "description": "Heater",
+              "id": "de6a3c95-b7b8-427e-9775-7c9fd612631f",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
           "id": "46fe6203-6b1c-40c5-ba96-91748b35cdd7",
@@ -6052,9 +7150,22 @@
                   ]
                 }
               }
+            },
+            {
+              "description": "Heater",
+              "id": "de6a3c95-b7b8-427e-9775-7c9fd612631f",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
-          "id": "764cd060-fd7d-454b-a0bc-10183bb34238",
+          "id": "cfb295b4-2110-4080-a405-e66edd7aa0f5",
           "identifier": [
             "J-Mecha"
           ],
@@ -6297,6 +7408,19 @@
                   "value": [
                     0,
                     255
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Heater",
+              "id": "79d03d77-af13-4bd4-b291-ac96b58920f4",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
                   ]
                 }
               }
@@ -6694,6 +7818,18 @@
                   ]
                 }
               }
+            },
+            {
+              "id": "70903377-5343-411c-9570-f3d763726b0b",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
           "id": "a8278c49-58c3-416e-9ae1-072dcfe0f694",
@@ -7015,6 +8151,18 @@
                   ]
                 }
               }
+            },
+            {
+              "id": "83f5e8e1-44c8-4a2a-820c-9197b9add2c6",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
           "id": "e3646777-6550-4984-91bb-3cd738744494",
@@ -7217,6 +8365,18 @@
                   ]
                 }
               }
+            },
+            {
+              "id": "e0960a02-fcc5-4644-b2da-ad63d919c40e",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
           "id": "1347963d-6bad-41c5-bf3a-314980e3316b",
@@ -7247,6 +8407,18 @@
                   "value": [
                     0,
                     255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "ae59166a-9c6c-434c-aa30-a5197a65e7ab",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
                   ]
                 }
               }
@@ -7325,6 +8497,18 @@
                   "value": [
                     0,
                     255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "0e1c23a5-3d69-4ae0-ba1a-cfc76c4c52b2",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
                   ]
                 }
               }
@@ -7498,6 +8682,19 @@
                   ]
                 }
               }
+            },
+            {
+              "description": "Heater",
+              "id": "e4e0597f-7cbe-4f80-9f71-3f475cacfb27",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
           "id": "b559b1ec-d336-45bb-b6e6-cc22344eefd7",
@@ -7533,6 +8730,19 @@
                   "value": [
                     0,
                     9
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Heater",
+              "id": "2a88a8fa-f765-4a9c-a2ee-3049256e135d",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
                   ]
                 }
               }
@@ -7644,6 +8854,18 @@
                   "value": [
                     0,
                     255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "e35119ff-ec16-4748-aeb4-14ef508876f4",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
                   ]
                 }
               }
@@ -8235,10 +9457,10 @@
         {
           "features": [
             {
-              "id": "616ea55d-f78e-469c-82d1-92f96b1ffea3",
-              "index": 0,
+              "id": "4e3b6192-d5dd-4fcf-b307-7487ca18fc1b",
+              "index": 3,
               "output": {
-                "oscillate": {
+                "rotate": {
                   "value": [
                     0,
                     255
@@ -8247,13 +9469,13 @@
               }
             },
             {
-              "id": "4e3b6192-d5dd-4fcf-b307-7487ca18fc1b",
-              "index": 3,
+              "id": "f272232f-a549-4a08-9b94-0587e2d4f467",
+              "index": 4,
               "output": {
-                "vibrate": {
+                "constrict": {
                   "value": [
                     0,
-                    255
+                    7
                   ]
                 }
               }
@@ -8348,7 +9570,7 @@
             },
             {
               "id": "94025679-badf-49bb-a247-1dab022d9204",
-              "index": 1,
+              "index": 2,
               "output": {
                 "vibrate": {
                   "value": [
@@ -8382,12 +9604,25 @@
             {
               "description": "Suction",
               "id": "a38653c9-c245-4c98-86c9-3c0da68d646c",
-              "index": 4,
+              "index": 5,
               "output": {
                 "constrict": {
                   "value": [
                     0,
                     9
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Heater",
+              "id": "8a6b866f-8e6b-48ad-95ba-c6317c3a76ee",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
                   ]
                 }
               }
@@ -8478,6 +9713,19 @@
                   ]
                 }
               }
+            },
+            {
+              "description": "Heater",
+              "id": "cf0a98e6-9d1b-41f8-9d02-6139fefb4ad6",
+              "index": 6,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
             }
           ],
           "id": "7b440f5f-3d18-49a4-a1da-1d0a164d0d7a",
@@ -8530,14 +9778,726 @@
             "J-Mirage3"
           ],
           "name": "JoyHub Mirage 3"
+        },
+        {
+          "features": [
+            {
+              "id": "0f684f33-7e8a-476d-a743-c90679f1dcbd",
+              "index": 0,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "78d004f2-35c4-4e62-a31d-945015241153",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "4f24b8c1-9508-4ebc-9bba-2077b8bd26f0",
+              "index": 7,
+              "output": {
+                "spray": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "2d9730d2-272b-489a-a525-22a9a5ce15dd",
+          "identifier": [
+            "J-Dodge"
+          ],
+          "name": "JoyHub Dodge"
+        },
+        {
+          "features": [
+            {
+              "id": "7edb7f9a-78f3-4afb-8441-d3c8ad5d790c",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "4dd04a7e-38ac-45a0-966d-c8ba652dc1d2",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "d5bd0e69-7bdc-4ad7-80ab-6c7a2255208f",
+          "identifier": [
+            "J-Pyt"
+          ],
+          "name": "JoyHub Pyt"
+        },
+        {
+          "features": [
+            {
+              "id": "96f2b666-1663-4b59-83a3-5b9f95097095",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "ddff38ef-a553-4e6a-85cd-40a1143452f5",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "53ce5d2f-d0c9-448b-8df5-4f739bd44a4b",
+          "identifier": [
+            "J-Pogo"
+          ],
+          "name": "JoyHub Pogo"
+        },
+        {
+          "features": [
+            {
+              "id": "304f0407-7de2-4c6f-adfc-079c61044315",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "b7471ca3-cbd9-4caf-affd-54865699f439",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "682796f5-1855-4f5c-ac58-c7a41b9f80dd",
+          "identifier": [
+            "J-Pyro"
+          ],
+          "name": "JoyHub Pyro"
+        },
+        {
+          "features": [
+            {
+              "id": "dab7bb9f-eb4a-438a-a258-38ca4681e90a",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "32e2e5ba-18d5-458f-ad3e-1a2a2d843d37",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "f0d063d7-7f65-433d-8a05-2c77feae822c",
+              "index": 4,
+              "output": {
+                "constrict": {
+                  "value": [
+                    0,
+                    7
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "6760c297-4a6a-4b0b-b14f-6151b96fc6a0",
+          "identifier": [
+            "J-MaxSensr"
+          ],
+          "name": "JoyHub MaxSensr"
+        },
+        {
+          "features": [
+            {
+              "id": "606f197a-5b57-40e0-b2a6-ff5e708e8dd2",
+              "index": 0,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "9b714873-28ec-490c-a3e7-11b4a70dd74b",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "70802c01-4a36-40fe-bdc2-a9e162437566",
+              "index": 5,
+              "output": {
+                "temperature": {
+                  "value": [
+                    0,
+                    1
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "d862601d-1567-48c3-9dd8-bd4596a6657e",
+          "identifier": [
+            "J-Diego"
+          ],
+          "name": "JoyHub Diego"
+        },
+        {
+          "features": [
+            {
+              "id": "ff39d6f4-d876-4701-9746-6c7bbe4db308",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "6753b978-3d72-4a35-a81c-c9a82b868509",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "1ce54e39-94cf-4fa8-8717-a31917eaa73a",
+              "index": 4,
+              "output": {
+                "constrict": {
+                  "value": [
+                    0,
+                    7
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "1939df4a-2041-4d8e-bf08-0f6144f54490",
+          "identifier": [
+            "J-RoseVore"
+          ],
+          "name": "JoyHub Rose Vore"
+        },
+        {
+          "features": [
+            {
+              "id": "8e0414b6-87e2-4359-be06-aaf965d08e58",
+              "index": 0,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "e66e5331-26c9-4b6b-b2a3-f5d13e07a60c",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "5b0614a8-857b-4d8f-b1ec-0d078d35c068",
+          "identifier": [
+            "J-Rosethorn2"
+          ],
+          "name": "JoyHub Rosethorn 2"
+        },
+        {
+          "features": [
+            {
+              "id": "bf2f834c-8aeb-4256-aca6-aa8dab875335",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "250903cb-4f2b-42c5-89a9-56f7d5a022a6",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "d4e5df1e-4a94-4046-8e15-426a50bbbd32",
+              "index": 2,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "fc64af3a-5ce1-4306-884f-80bfe3264390",
+          "identifier": [
+            "J-Pak"
+          ],
+          "name": "JoyHub Pak"
+        },
+        {
+          "features": [
+            {
+              "id": "c445c35e-ede0-41c8-a9a5-fdc149eaa749",
+              "index": 0,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "8e352fda-af55-4f38-8c6a-b62765229b4f",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "242d7a8d-cc3b-47fe-ac22-58b2392d9f4e",
+              "index": 2,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "7cea69f0-7451-4a9b-91bc-30029c20daad",
+          "identifier": [
+            "J-VeeLips"
+          ],
+          "name": "JoyHub VeeLips"
+        },
+        {
+          "features": [
+            {
+              "id": "04a84dfd-d14b-46e1-90f8-db8d95bac592",
+              "index": 0,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "48f551e8-7e1d-4705-a487-600105b9a6f4",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "be0ffcb5-e529-4d6c-9002-1764631b1fb6",
+          "identifier": [
+            "J-Veeva2"
+          ],
+          "name": "JoyHub Veeva 2"
+        },
+        {
+          "features": [
+            {
+              "id": "bd5209de-3544-49c7-9c77-c612f958f78c",
+              "index": 0,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "d4fad572-2b04-4491-9ed0-97555053b5ce",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "bafdaacd-8e51-4779-9624-7b9af4a8a657",
+          "identifier": [
+            "J-Punch"
+          ],
+          "name": "JoyHub Punch"
+        },
+        {
+          "features": [
+            {
+              "id": "df48bbd6-67c0-43f1-9a37-1cce16e3cae1",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "99a22a51-06d4-4ca3-aed4-b176745ab224",
+              "index": 2,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "be00e6fb-cf33-4fc8-ab31-aee8cb4e4eda",
+          "identifier": [
+            "J-RoseStar"
+          ],
+          "name": "JoyHub Rose Star"
+        },
+        {
+          "id": "b5221199-416a-441e-9ad5-966d9aeb9065",
+          "identifier": [
+            "J-Vows"
+          ],
+          "name": "JoyHub Vows"
+        },
+        {
+          "features": [
+            {
+              "id": "f2622fe8-3bf2-44fb-af6f-d1ea0c3c223f",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "abccc57b-ecc2-432f-af30-00019c371be7",
+              "index": 2,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "83b6f871-b99c-42b5-a0d8-11e9cf058bf1",
+          "identifier": [
+            "J-Pixel"
+          ],
+          "name": "JoyHub Pixel"
+        },
+        {
+          "id": "80f53cba-d56e-47a6-aa23-b5cca2840011",
+          "identifier": [
+            "J-SyncFlare"
+          ],
+          "name": "JoyHub Sync Flare"
+        },
+        {
+          "features": [
+            {
+              "id": "b6b6d567-be8b-4ebe-8beb-24214807fd99",
+              "index": 0,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "dffcbaa5-9339-4ee6-8a3f-00a583de5d4e",
+              "index": 2,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "04873217-3f77-46cc-bfd3-c6cc32008c18",
+          "identifier": [
+            "J-AuroraII"
+          ],
+          "name": "JoyHub Aurora II"
+        },
+        {
+          "features": [
+            {
+              "description": "Internal vibe",
+              "id": "c0fa41dd-f96b-44ed-a932-ee8210cf350f",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Wand head",
+              "id": "aa63f859-4255-4da5-b012-7781d70de3df",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "23719c0e-1c87-4120-982c-a43ff8a62255",
+          "identifier": [
+            "J-Vortus"
+          ],
+          "name": "JoyHub Vortus"
+        },
+        {
+          "features": [
+            {
+              "id": "2f89e300-262f-4cd1-a969-05d3487131db",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "c11fa405-aa04-42af-8f35-bc0fc6e175cd",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "fe8a731c-958e-4215-a4f7-f1a46eb06655",
+          "identifier": [
+            "J-Phantom"
+          ],
+          "name": "JoyHub Phantom"
+        },
+        {
+          "features": [
+            {
+              "id": "f22c664a-cf07-42ec-b9b0-de82b51492f0",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "c53ef975-9af4-4846-b966-3b7872ee6416",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "34371342-4205-4913-96e9-e6911dbcc161",
+          "identifier": [
+            "J-Thelma"
+          ],
+          "name": "JoyHub Thelma"
+        },
+        {
+          "features": [
+            {
+              "id": "5d1e77b7-286c-4a16-b8ee-fd77225b423c",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "5fbd22f4-a300-467e-b7d6-90ff16690a0c",
+              "index": 5,
+              "output": {
+                "constrict": {
+                  "value": [
+                    0,
+                    10
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "0dad021f-8e31-46cd-8dc4-6a5d67a70539",
+          "identifier": [
+            "J-Mystor"
+          ],
+          "name": "JoyHub Mystor"
         }
       ],
       "defaults": {
         "features": [
           {
-            "feature_settings": {
-              "alt_protocol_index": 1
-            },
             "id": "fc2f0fc2-fb75-4eee-b92b-20eaf7cc9a1e",
             "index": 0,
             "output": {
@@ -8575,9 +10535,45 @@
       "defaults": {
         "features": [
           {
-            "description": "battery Level",
-            "id": "59d2de82-3acf-4316-982f-c2b570afd297",
+            "description": "Pressure (Normalized)",
+            "id": "a5998ca1-c33e-4739-8203-0d6050b215bf",
             "index": 0,
+            "input": {
+              "pressure": {
+                "command": [
+                  "Subscribe"
+                ],
+                "value": [
+                  [
+                    0,
+                    2000
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "description": "Pressure (Raw)",
+            "id": "da5ae965-a607-467a-bb62-c09d8e438205",
+            "index": 1,
+            "input": {
+              "pressure": {
+                "command": [
+                  "Subscribe"
+                ],
+                "value": [
+                  [
+                    0,
+                    2000
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "description": "Battery Level",
+            "id": "59d2de82-3acf-4316-982f-c2b570afd297",
+            "index": 2,
             "input": {
               "battery": {
                 "command": [
@@ -8828,7 +10824,7 @@
               "id": "2fe100ee-4665-4132-b4c6-d70a4037d6ac",
               "index": 0,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -8899,7 +10895,7 @@
             "id": "49b06ca8-dd4d-4306-91c6-931143dee212",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -9297,7 +11293,7 @@
               "id": "b77ed4d9-9350-4868-8cb3-a6c48112f8b2",
               "index": 1,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -9565,7 +11561,7 @@
               "id": "8cd94334-adde-4d9b-aad9-c2de93adb2c0",
               "index": 0,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -9590,7 +11586,7 @@
               "id": "c66d882d-f752-45b4-806e-166d3e160eb8",
               "index": 0,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -9615,7 +11611,7 @@
               "id": "da002a11-610a-4e13-94c5-4c45d51814f2",
               "index": 0,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -9641,7 +11637,7 @@
               "id": "8c896f82-2e17-46f9-9db2-531cc7e42236",
               "index": 0,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -9693,7 +11689,7 @@
               "id": "f4ee99e7-1a14-4315-9870-3990bca7ff94",
               "index": 0,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -9823,8 +11819,7 @@
             "names": [
               "F1SV2A",
               "F1SV2X",
-              "F1SV3",
-              "F2"
+              "F1SV3"
             ],
             "services": {
               "0000fff0-0000-1000-8000-00805f9b34fb": {
@@ -9853,13 +11848,6 @@
             "F1SV3"
           ],
           "name": "Lelo F1s V3"
-        },
-        {
-          "id": "5126b376-fc82-4677-bfc0-c45738549b9d",
-          "identifier": [
-            "F2"
-          ],
-          "name": "Lelo F2S"
         }
       ],
       "defaults": {
@@ -9902,11 +11890,17 @@
               "Ida Wave",
               "TianiHarmony",
               "Tiani Harmony",
+              "Tiani Twist",
               "TOR3",
               "Hugo2",
               "DoubleSonic",
               "GIGI3",
-              "LIV3"
+              "LIV3",
+              "SONA3 Cruise",
+              "Switch",
+              "SURFER2",
+              "F2",
+              "Boomerang"
             ],
             "services": {
               "0000fff0-0000-1000-8000-00805f9b34fb": {
@@ -10055,6 +12049,116 @@
             "LIV3"
           ],
           "name": "Lelo Liv 3"
+        },
+        {
+          "features": [
+            {
+              "id": "ae6da200-6f51-446c-bda7-c0fb733b000a",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "9d143dc1-654b-4363-bbc8-633210752e6e",
+          "identifier": [
+            "SONA3 Cruise"
+          ],
+          "name": "Lelo Sona 3 Cruise"
+        },
+        {
+          "features": [
+            {
+              "id": "111e5f86-8937-45da-b311-bc254db23d79",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "id": "aba790a5-43bd-4826-8fd3-731d71e95e48",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "7f5680f0-e5e2-49f2-b265-db7aad110526",
+          "identifier": [
+            "Switch"
+          ],
+          "name": "Lelo Switch"
+        },
+        {
+          "id": "d8f3c009-6712-4a2e-98f6-a75170fa4112",
+          "identifier": [
+            "F2"
+          ],
+          "name": "Lelo F2S"
+        },
+        {
+          "features": [
+            {
+              "id": "ea48d476-6d05-475b-bb0e-6bff3952ccaa",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "d8cf8c64-863c-4080-8dd5-98255eca9a7c",
+          "identifier": [
+            "Tiani Twist"
+          ],
+          "name": "Lelo Tiani Twist"
+        },
+        {
+          "features": [
+            {
+              "id": "f9d5ea43-e233-4b7e-8348-7ff95439e7a9",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "2add7033-66ad-4c69-a63d-8a35b012e958",
+          "identifier": [
+            "SURFER2"
+          ],
+          "name": "Lelo Surfer 2"
+        },
+        {
+          "id": "8f386409-748f-4bff-a863-3b9475c4b528",
+          "identifier": [
+            "Boomerang"
+          ],
+          "name": "Lelo Boomerang"
         }
       ],
       "defaults": {
@@ -10527,7 +12631,7 @@
             "id": "7078c41e-0cd3-4264-8f54-c331ac4c81f9",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -10799,7 +12903,8 @@
               "43410001-0023-4bd4-bbd5-a6920e4c5653",
               "4f430001-0023-4bd4-bbd5-a6920e4c5653",
               "455a0001-0023-4bd4-bbd5-a6920e4c5653",
-              "57440001-0023-4bd4-bbd5-a6920e4c5653"
+              "57440001-0023-4bd4-bbd5-a6920e4c5653",
+              "414e0001-0023-4bd4-bbd5-a6920e4c5653"
             ],
             "manufacturer_data": [
               {
@@ -10819,6 +12924,10 @@
                 "rx": "0000fff1-0000-1000-8000-00805f9b34fb",
                 "tx": "0000fff2-0000-1000-8000-00805f9b34fb"
               },
+              "414e0001-0023-4bd4-bbd5-a6920e4c5653": {
+                "rx": "414e0003-0023-4bd4-bbd5-a6920e4c5653",
+                "tx": "414e0002-0023-4bd4-bbd5-a6920e4c5653"
+              },
               "42300001-0023-4bd4-bbd5-a6920e4c5653": {
                 "rx": "42300003-0023-4bd4-bbd5-a6920e4c5653",
                 "tx": "42300002-0023-4bd4-bbd5-a6920e4c5653"
@@ -10834,6 +12943,10 @@
               "43410001-0023-4bd4-bbd5-a6920e4c5653": {
                 "rx": "43410003-0023-4bd4-bbd5-a6920e4c5653",
                 "tx": "43410002-0023-4bd4-bbd5-a6920e4c5653"
+              },
+              "43420001-0023-4bd4-bbd5-a6920e4c5653": {
+                "rx": "43420003-0023-4bd4-bbd5-a6920e4c5653",
+                "tx": "43420002-0023-4bd4-bbd5-a6920e4c5653"
               },
               "45410001-0023-4bd4-bbd5-a6920e4c5653": {
                 "rx": "45410003-0023-4bd4-bbd5-a6920e4c5653",
@@ -10958,6 +13071,10 @@
               "5a300001-0024-4bd4-bbd5-a6920e4c5653": {
                 "rx": "5a300003-0024-4bd4-bbd5-a6920e4c5653",
                 "tx": "5a300002-0024-4bd4-bbd5-a6920e4c5653"
+              },
+              "5a410001-0023-4bd4-bbd5-a6920e4c5653": {
+                "rx": "5a410003-0023-4bd4-bbd5-a6920e4c5653",
+                "tx": "5a410002-0023-4bd4-bbd5-a6920e4c5653"
               },
               "6e400001-b5a3-f393-e0a9-e50e24dcca9e": {
                 "rx": "6e400003-b5a3-f393-e0a9-e50e24dcca9e",
@@ -11125,6 +13242,57 @@
           "name": "Lovense Nora"
         },
         {
+          "features": [
+            {
+              "id": "62061a3a-aad2-4509-9a6f-755b4bdf0acc",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    20
+                  ]
+                }
+              }
+            },
+            {
+              "id": "5085f9a9-df8b-4dbc-ae10-5ac53c8a626d",
+              "index": 1,
+              "output": {
+                "rotate": {
+                  "value": [
+                    -20,
+                    20
+                  ]
+                }
+              }
+            },
+            {
+              "description": "battery Level",
+              "id": "f15587c9-7a1a-41e1-8c99-7f592feaf4ed",
+              "index": 2,
+              "input": {
+                "battery": {
+                  "command": [
+                    "Read"
+                  ],
+                  "value": [
+                    [
+                      0,
+                      100
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "dffa9fe4-51ac-404b-b0f8-f74377f81f85",
+          "identifier": [
+            "CB"
+          ],
+          "name": "Lovense Velvo"
+        },
+        {
           "id": "7053fde9-0902-4aab-926d-fc51869f6ccc",
           "identifier": [
             "L"
@@ -11139,11 +13307,25 @@
           "name": "Lovense Lush"
         },
         {
+          "id": "c0879e9a-2db6-40b3-a133-4a06e2ff16cb",
+          "identifier": [
+            "AN"
+          ],
+          "name": "Lovense Lush Anal"
+        },
+        {
           "id": "37642e1c-a416-44d3-bada-76b6d9e245c9",
           "identifier": [
             "Z"
           ],
           "name": "Lovense Hush"
+        },
+        {
+          "id": "abe83a3e-9b52-48b5-bf08-b45fd5f3e73a",
+          "identifier": [
+            "ZA"
+          ],
+          "name": "Lovense Synth"
         },
         {
           "id": "e788f8d5-037a-4ce4-a13f-6b2e8ec31fb6",
@@ -11801,13 +13983,7 @@
               "id": "c4b2855d-5ecc-4010-8a8d-17fd3e51cc57",
               "index": 0,
               "output": {
-                "oscillate": {
-                  "value": [
-                    0,
-                    20
-                  ]
-                },
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -11815,6 +13991,12 @@
                   "value": [
                     0,
                     100
+                  ]
+                },
+                "oscillate": {
+                  "value": [
+                    0,
+                    20
                   ]
                 }
               }
@@ -12717,7 +14899,10 @@
               "TKLM-W001-BT",
               "TKLM-W003-BT-RX",
               "TKLM-C003-BT",
-              "TKLM-C004-BT"
+              "TKLM-C004-BT",
+              "TKLM-C005-BT",
+              "TKLM-N001-BT",
+              "TKLM-C001-BT"
             ],
             "services": {
               "0000ffa0-0000-1000-8000-00805f9b34fb": {
@@ -12845,6 +15030,117 @@
             "TKLM-C004-BT"
           ],
           "name": "Luvmazer Interstellar"
+        },
+        {
+          "features": [
+            {
+              "id": "d4559035-06e7-4ee1-a3ac-08f46abe10a8",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "264aa9db-05ee-49dc-bf95-15ecd90bad5c",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "bf7f9090-02a4-43b7-9752-232c97a05a49",
+          "identifier": [
+            "TKLM-C005-BT"
+          ],
+          "name": "Luvmazer Dildo"
+        },
+        {
+          "features": [
+            {
+              "id": "238a4ab0-c4a1-4c48-b721-f7db31e68080",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "5bc79997-0425-4fd8-a873-16dc0e41f621",
+              "index": 1,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "33f85933-87a8-407f-92bd-6e9db4458764",
+              "index": 2,
+              "output": {
+                "constrict": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "4e8fc36f-2fae-4abe-9c17-fdd207f8dd74",
+          "identifier": [
+            "TKLM-N001-BT"
+          ],
+          "name": "Luvmazer Fantasy Nova"
+        },
+        {
+          "features": [
+            {
+              "id": "66e1740f-18b6-4848-ab9e-729968b767d0",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            },
+            {
+              "id": "2288452e-65ee-4c00-b0e4-3c75dbd1464b",
+              "index": 2,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    255
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "10030d9f-bb93-4c57-8a07-a53dabd0dde9",
+          "identifier": [
+            "TKLM-C001-BT"
+          ],
+          "name": "Luvmazer Rose Finger Vibe"
         }
       ],
       "defaults": {
@@ -14259,6 +16555,41 @@
         "name": "Muse Device"
       }
     },
+    "mymuselinkplus": {
+      "communication": [
+        {
+          "btle": {
+            "names": [
+              "MM Massager"
+            ],
+            "services": {
+              "0000fff0-0000-1000-8000-00805f9b34fb": {
+                "tx": "0000fff1-0000-1000-8000-00805f9b34fb"
+              }
+            }
+          }
+        }
+      ],
+      "defaults": {
+        "features": [
+          {
+            "description": "Vibrator",
+            "id": "b8c3a1f0-7d2e-4a19-9f6b-3e8d1c5a2b40",
+            "index": 0,
+            "output": {
+              "vibrate": {
+                "value": [
+                  0,
+                  3
+                ]
+              }
+            }
+          }
+        ],
+        "id": "a1f0b8c3-2e7d-194a-6b9f-8d3e1c5a2b40",
+        "name": "MyMuse Link Plus"
+      }
+    },
     "mysteryvibe": {
       "communication": [
         {
@@ -15311,7 +17642,7 @@
             "id": "60da884f-131a-4036-ae93-97efc97591e2",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -17883,7 +20214,7 @@
             "id": "7e756a59-b13c-4322-bc59-27dacfc73b4d",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -18523,6 +20854,175 @@
         "name": "Sexverse Heart"
       }
     },
+    "simulated": {
+      "communication": [
+        {
+          "simulated": {
+            "names": [
+              "simulated-1vibe",
+              "simulated-2vibe",
+              "simulated-rotator",
+              "simulated-oscillator",
+              "simulated-stroker"
+            ]
+          }
+        }
+      ],
+      "configurations": [
+        {
+          "features": [
+            {
+              "description": "Motor",
+              "id": "a1b2c3d4-1001-4000-8000-000000000001",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "a1b2c3d4-1000-4000-8000-000000000000",
+          "identifier": [
+            "simulated-1vibe"
+          ],
+          "name": "Simulated 1-Motor Vibrator"
+        },
+        {
+          "features": [
+            {
+              "description": "Motor 1",
+              "id": "a1b2c3d4-2001-4000-8000-000000000001",
+              "index": 0,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Motor 2",
+              "id": "a1b2c3d4-2002-4000-8000-000000000002",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "a1b2c3d4-2000-4000-8000-000000000000",
+          "identifier": [
+            "simulated-2vibe"
+          ],
+          "name": "Simulated 2-Motor Vibrator"
+        },
+        {
+          "features": [
+            {
+              "description": "Rotation Motor",
+              "id": "a1b2c3d4-3001-4000-8000-000000000001",
+              "index": 0,
+              "output": {
+                "rotate": {
+                  "value": [
+                    -100,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "a1b2c3d4-3000-4000-8000-000000000000",
+          "identifier": [
+            "simulated-rotator"
+          ],
+          "name": "Simulated Rotator"
+        },
+        {
+          "features": [
+            {
+              "description": "Oscillation Motor",
+              "id": "a1b2c3d4-4001-4000-8000-000000000001",
+              "index": 0,
+              "output": {
+                "oscillate": {
+                  "value": [
+                    0,
+                    100
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "a1b2c3d4-4000-4000-8000-000000000000",
+          "identifier": [
+            "simulated-oscillator"
+          ],
+          "name": "Simulated Oscillator"
+        },
+        {
+          "features": [
+            {
+              "description": "Linear Axis",
+              "id": "a1b2c3d4-5001-4000-8000-000000000001",
+              "index": 0,
+              "output": {
+                "hw_position_with_duration": {
+                  "duration": [
+                    0,
+                    100000
+                  ],
+                  "value": [
+                    0,
+                    1000
+                  ]
+                },
+                "position": {
+                  "value": [
+                    0,
+                    1000
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "a1b2c3d4-5000-4000-8000-000000000000",
+          "identifier": [
+            "simulated-stroker"
+          ],
+          "name": "Simulated Stroker"
+        }
+      ],
+      "defaults": {
+        "features": [
+          {
+            "description": "Motor",
+            "id": "a1b2c3d4-0001-4000-8000-000000000001",
+            "index": 0,
+            "output": {
+              "vibrate": {
+                "value": [
+                  0,
+                  100
+                ]
+              }
+            }
+          }
+        ],
+        "id": "a1b2c3d4-0000-4000-8000-000000000000",
+        "name": "Simulated Device"
+      }
+    },
     "svakom-alex": {
       "communication": [
         {
@@ -18952,7 +21452,8 @@
               "BX288A",
               "QH-SX045A-B",
               "SWK-SX067-B",
-              "QH-HX029A-B"
+              "QH-HX029A-B",
+              "HX013H"
             ],
             "services": {
               "0000ffe0-0000-1000-8000-00805f9b34fb": {
@@ -18967,7 +21468,8 @@
         {
           "id": "5b9918c8-af63-409f-9749-f5e6faf2dca0",
           "identifier": [
-            "SWK-SX013A"
+            "SWK-SX013A",
+            "HX013H"
           ],
           "name": "Svakom Pulse Lite Neo"
         },
@@ -19079,7 +21581,7 @@
             "id": "cfdf5760-bce0-465c-a2c6-60c86fdd3c95",
             "index": 1,
             "output": {
-              "vibrate": {
+              "constrict": {
                 "value": [
                   0,
                   1
@@ -20059,19 +22561,30 @@
       "defaults": {
         "features": [
           {
-            "id": "4097edde-7efb-4c3e-afdb-0aeb82a03fd9",
+            "id": "afa1e63e-b6c7-4519-8faa-68cefe197a31",
             "index": 0,
             "output": {
+              "hw_position_with_duration": {
+                "duration": [
+                  0,
+                  99999
+                ],
+                "value": [
+                  0,
+                  999
+                ]
+              },
               "position": {
                 "value": [
                   0,
-                  1000
+                  999
                 ]
               }
             }
           }
         ],
-        "id": "211da02e-467c-4788-96bd-689049867e85",
+        "id": "5c1195a5-a2e4-4643-bd47-8cb3a1e067f4",
+        "message_gap_ms": 20,
         "name": "TCode v0.3 (Single Linear Axis)"
       }
     },
@@ -20097,7 +22610,7 @@
             "id": "32309a60-f980-490d-a5f4-467ccae2d586",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -20111,6 +22624,7 @@
           }
         ],
         "id": "fc9de0ed-0f9f-402e-a1b5-4d1865e7b87b",
+        "message_gap_ms": 50,
         "name": "The Handy"
       }
     },
@@ -20177,7 +22691,7 @@
             "id": "ccbbda59-cf58-477e-b1b2-e0897c4bb0ce",
             "index": 0,
             "output": {
-              "position_with_duration": {
+              "hw_position_with_duration": {
                 "duration": [
                   0,
                   100000
@@ -20191,6 +22705,7 @@
           }
         ],
         "id": "ccbbda59-cf58-477e-b1b2-e0897c4bb0ce",
+        "message_gap_ms": 50,
         "name": "The Handy (FW4+)"
       }
     },
@@ -20272,7 +22787,8 @@
         {
           "btle": {
             "names": [
-              "TF-BHPLUS"
+              "TF-BHPLUS",
+              "TF-ROCK"
             ],
             "services": {
               "0000ffac-0000-1000-8000-00805f9b34fb": {
@@ -20280,6 +22796,29 @@
               }
             }
           }
+        }
+      ],
+      "configurations": [
+        {
+          "features": [
+            {
+              "id": "e27b1f9c-8a34-4d12-b76e-9f8c2a5d176b",
+              "index": 1,
+              "output": {
+                "vibrate": {
+                  "value": [
+                    0,
+                    50
+                  ]
+                }
+              }
+            }
+          ],
+          "id": "d2e5f7a9-1b3c-4680-bf5d-7c9a2e4f6d8b",
+          "identifier": [
+            "TF-ROCK"
+          ],
+          "name": "TryFun Rock"
         }
       ],
       "defaults": {
@@ -20393,6 +22932,68 @@
         "features": [],
         "id": "83e29d7a-6f35-499a-90f8-dfba8b674379",
         "name": "Twerking Butt"
+      }
+    },
+    "utimi": {
+      "communication": [
+        {
+          "btle": {
+            "names": [
+              "Utimi*"
+            ],
+            "services": {
+              "0000ffa0-0000-1000-8000-00805f9b34fb": {
+                "tx": "0000ffa1-0000-1000-8000-00805f9b34fb"
+              }
+            }
+          }
+        }
+      ],
+      "configurations": [
+        {
+          "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
+          "identifier": [
+            "Utimi"
+          ],
+          "name": "Utimi Prostate Massager"
+        },
+        {
+          "id": "4a418af2-74c6-4b98-9a21-80690aae4cec",
+          "identifier": [
+            "Utimi000040"
+          ],
+          "name": "Utimi KnotVibe ThrustMaster"
+        }
+      ],
+      "defaults": {
+        "features": [
+          {
+            "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+            "index": 0,
+            "output": {
+              "vibrate": {
+                "value": [
+                  0,
+                  255
+                ]
+              }
+            }
+          },
+          {
+            "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+            "index": 1,
+            "output": {
+              "oscillate": {
+                "value": [
+                  0,
+                  255
+                ]
+              }
+            }
+          }
+        ],
+        "id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+        "name": "Utimi Device"
       }
     },
     "vibcrafter": {
@@ -20708,9 +23309,12 @@
               "CycSA",
               "UFOSA",
               "UFO-TW",
+              "UFO-",
+              "UFO ",
               "VorzePiston",
               "ROCKET",
-              "OMORFI"
+              "OMORFI",
+              "OMOR"
             ],
             "services": {
               "40ee1111-63ec-4b7f-8ce7-712efd55b90e": {
@@ -20838,7 +23442,9 @@
           ],
           "id": "32e92986-3ae4-45f3-9aec-05d6028f1cb7",
           "identifier": [
-            "UFO-TW"
+            "UFO-TW",
+            "UFO-",
+            "UFO "
           ],
           "name": "Vorze UFO TW",
           "protocol_variant": "vorze-sa-dual-rotator"
@@ -20849,7 +23455,7 @@
               "id": "7c8d7a1d-9e2f-4a92-83f3-42a0840b90bd",
               "index": 0,
               "output": {
-                "position_with_duration": {
+                "hw_position_with_duration": {
                   "duration": [
                     0,
                     100000
@@ -20898,7 +23504,8 @@
           ],
           "id": "aef03284-6d45-426a-b02c-efa7896d4865",
           "identifier": [
-            "OMORFI"
+            "OMORFI",
+            "OMOR"
           ],
           "name": "Vorze Omorfi",
           "protocol_variant": "vorze-sa-dual-vibrator"
@@ -21188,6 +23795,7 @@
           "btle": {
             "names": [
               "Melt",
+              "Melt 2",
               "Moxie",
               "Vector",
               "Wand",
@@ -21197,7 +23805,8 @@
               "Nova2",
               "Nova_2",
               "Nova 2",
-              "Jive 2"
+              "Jive 2",
+              "Jive Lite"
             ],
             "services": {
               "f000bb03-0451-4000-b000-000000000000": {
@@ -21226,7 +23835,8 @@
           ],
           "id": "4f73e55c-bea8-4069-8409-cba30fbbfc81",
           "identifier": [
-            "Melt"
+            "Melt",
+            "Melt 2"
           ],
           "name": "WeVibe Melt"
         },
@@ -21375,6 +23985,13 @@
             "Jive 2"
           ],
           "name": "WeVibe Jive 2"
+        },
+        {
+          "id": "d04e09b4-889c-4626-b23f-6321396c81e9",
+          "identifier": [
+            "Jive Lite"
+          ],
+          "name": "WeVibe Jive Lite"
         }
       ],
       "defaults": {

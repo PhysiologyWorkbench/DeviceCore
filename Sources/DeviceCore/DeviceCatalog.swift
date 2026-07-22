@@ -19,7 +19,7 @@ public enum Feature: Sendable, Equatable {
 public struct DeviceCatalog: @unchecked Sendable {
     /// Bundled config resource (a Buttplug build artifact). Single source of truth
     /// for the filename; re-syncing the config replaces the file, not this name.
-    public static let defaultConfigResource = "buttplug-device-config-v4"
+    public static let defaultConfigResource = "buttplug-device-config-v5"
 
     /// Advertised-name prefixes to match while scanning, e.g. `["LVS-", "LOVE-"]`.
     public let namePrefixes: [String]
