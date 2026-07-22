@@ -77,6 +77,12 @@ public struct DeviceCatalog: @unchecked Sendable {
                         isGeneric: true)
     }
 
+    /// Scan filter for the catalogued vendor: advertised name prefixes and
+    /// service UUIDs. Fed to `BleTransport`.
+    public var scanFilter: ScanFilter {
+        ScanFilter(namePrefixes: namePrefixes, serviceUUIDs: advertisedServiceUUIDs)
+    }
+
     /// Returns the known serial endpoints for whichever discovered service we
     /// recognise, or nil so the caller can fall back to a property heuristic.
     public func serialEndpoints(amongDiscovered discovered: [CBUUID]) -> SerialEndpoints? {
@@ -98,6 +104,33 @@ public struct DeviceCatalog: @unchecked Sendable {
             throw CocoaError(.coderReadCorrupt)
         }
         return try JSONDecoder().decode(RawNode.self, from: JSONSerialization.data(withJSONObject: node))
+    }
+}
+
+/// Resolves the serial (tx write + rx notify) endpoints of a Lovense-style toy:
+/// prefers the catalogued endpoints for the discovered service, else the property
+/// heuristic (a writable + a notify in the same service) so un-catalogued toys
+/// still connect. This is the current transport behaviour, lifted verbatim behind
+/// the `EndpointResolver` seam.
+public struct SerialEndpointResolver: EndpointResolver {
+    private let catalog: DeviceCatalog
+    public init(catalog: DeviceCatalog) { self.catalog = catalog }
+
+    public func resolve(service: CBUUID,
+                        characteristics: [CBCharacteristic]) -> (tx: CBCharacteristic?, rx: CBCharacteristic)? {
+        var tx: CBCharacteristic?
+        var rx: CBCharacteristic?
+        if let ep = catalog.serialEndpoints(amongDiscovered: [service]) {
+            tx = characteristics.first { $0.uuid == ep.tx }
+            rx = characteristics.first { $0.uuid == ep.rx }
+        }
+        if tx == nil || rx == nil {
+            let writable = characteristics.first { $0.properties.contains(.write) || $0.properties.contains(.writeWithoutResponse) }
+            let notifying = characteristics.first { $0.properties.contains(.notify) }
+            if let writable, let notifying { tx = writable; rx = notifying }
+        }
+        guard let rx else { return nil }
+        return (tx, rx)
     }
 }
 

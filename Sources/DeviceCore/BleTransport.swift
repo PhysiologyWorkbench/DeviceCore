@@ -6,7 +6,8 @@ import Foundation
 /// continuations and `AsyncStream`. Platform-identical across macOS/iOS/iPadOS.
 public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, @unchecked Sendable {
     private let queue = DispatchQueue(label: "io.lelut.ble.transport")
-    private let catalog: DeviceCatalog
+    private let scanFilter: ScanFilter
+    private let resolver: EndpointResolver
     private var central: CBCentralManager!
 
     private var poweredOn = false
@@ -19,8 +20,9 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
     private var connections: [UUID: BleConnection] = [:]
     private var connectWaiters: [UUID: CheckedContinuation<DeviceConnection, Error>] = [:]
 
-    public init(catalog: DeviceCatalog) {
-        self.catalog = catalog
+    public init(scanFilter: ScanFilter, resolver: EndpointResolver) {
+        self.scanFilter = scanFilter
+        self.resolver = resolver
         super.init()
         central = CBCentralManager(delegate: self, queue: queue)
     }
@@ -59,7 +61,7 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
                     cont.resume(throwing: TransportError.unknownPeripheral); return
                 }
                 let conn = BleConnection(peripheral: peripheral, central: self.central,
-                                         catalog: self.catalog, queue: self.queue)
+                                         resolver: self.resolver, queue: self.queue)
                 conn.onReady = { [weak self] in self?.finishConnect(id.uuid, .success(conn)) }
                 conn.onFailure = { [weak self] err in self?.finishConnect(id.uuid, .failure(err)) }
                 self.connections[id.uuid] = conn
@@ -108,8 +110,8 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
                                advertisementData: [String: Any], rssi RSSI: NSNumber) {
         let name = peripheral.name ?? (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? ""
         let services = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID]) ?? []
-        let nameMatch = catalog.namePrefixes.contains { name.hasPrefix($0) }
-        let serviceMatch = !Set(services).isDisjoint(with: catalog.advertisedServiceUUIDs)
+        let nameMatch = scanFilter.namePrefixes.contains { name.hasPrefix($0) }
+        let serviceMatch = !Set(services).isDisjoint(with: scanFilter.serviceUUIDs)
         guard nameMatch || serviceMatch else { return }
 
         discovered[peripheral.identifier] = peripheral
@@ -145,7 +147,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
 
     private let peripheral: CBPeripheral
     private let central: CBCentralManager
-    private let catalog: DeviceCatalog
+    private let resolver: EndpointResolver
     private let queue: DispatchQueue
     private let inboundContinuation: AsyncStream<Data>.Continuation
     private let stateContinuation: AsyncStream<ConnectionState>.Continuation
@@ -159,10 +161,10 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     /// Queued write-without-response payloads awaiting link readiness, FIFO.
     private var pendingWrites: [(Data, CheckedContinuation<Bool, Error>)] = []
 
-    init(peripheral: CBPeripheral, central: CBCentralManager, catalog: DeviceCatalog, queue: DispatchQueue) {
+    init(peripheral: CBPeripheral, central: CBCentralManager, resolver: EndpointResolver, queue: DispatchQueue) {
         self.peripheral = peripheral
         self.central = central
-        self.catalog = catalog
+        self.resolver = resolver
         self.queue = queue
         self.id = PeripheralID(peripheral.identifier)
         var inboundCont: AsyncStream<Data>.Continuation!
@@ -195,8 +197,11 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool {
         try await withCheckedThrowingContinuation { cont in
             queue.async {
-                guard self.ready, let tx = self.tx else {
+                guard self.ready else {
                     cont.resume(throwing: TransportError.notConnected); return
+                }
+                guard let tx = self.tx else {
+                    cont.resume(throwing: TransportError.writeFailed("notify-only device: no writable characteristic")); return
                 }
                 if tx.properties.contains(.writeWithoutResponse) {
                     if self.peripheral.canSendWriteWithoutResponse {
@@ -232,23 +237,14 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        guard tx == nil else { return }
-        let chars = service.characteristics ?? []
-
-        // Prefer the catalog's known endpoints for this service; otherwise fall
-        // back to the property heuristic (the service holding both a writable and
-        // a notify characteristic), so un-catalogued toys still work.
-        if let ep = catalog.serialEndpoints(amongDiscovered: [service.uuid]) {
-            tx = chars.first { $0.uuid == ep.tx }
-            rx = chars.first { $0.uuid == ep.rx }
-        }
-        if tx == nil || rx == nil {
-            let writable = chars.first { $0.properties.contains(.write) || $0.properties.contains(.writeWithoutResponse) }
-            let notifying = chars.first { $0.properties.contains(.notify) }
-            if let writable, let notifying { tx = writable; rx = notifying }
-        }
-        guard let rx else { tx = nil; return }
-        peripheral.setNotifyValue(true, for: rx)
+        guard rx == nil else { return }
+        // The injected resolver binds this service's endpoints, or returns nil to
+        // skip it (wait for a later service). `tx` may be nil for notify-only
+        // devices; `rx` is the readiness/inbound source.
+        guard let ep = resolver.resolve(service: service.uuid, characteristics: service.characteristics ?? []) else { return }
+        tx = ep.tx
+        rx = ep.rx
+        peripheral.setNotifyValue(true, for: ep.rx)
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {

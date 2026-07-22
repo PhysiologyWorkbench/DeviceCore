@@ -20,6 +20,48 @@ public struct Discovery: @unchecked Sendable {
     public let services: [CBUUID]
 }
 
+/// What a scan matches on: an advertised name prefix **or** an advertised service
+/// UUID (either is sufficient). Device-neutral — the Lovense catalog and the HR
+/// profile each supply their own.
+public struct ScanFilter: @unchecked Sendable {
+    public let namePrefixes: [String]
+    public let serviceUUIDs: [CBUUID]
+    public init(namePrefixes: [String], serviceUUIDs: [CBUUID]) {
+        self.namePrefixes = namePrefixes
+        self.serviceUUIDs = serviceUUIDs
+    }
+}
+
+/// Picks the endpoints to bind on a connection, from one discovered service's
+/// characteristics. This is the input/output seam (extends ARCHITECTURE principle
+/// 4 to input): a serial toy resolves a writable tx + notify rx; a notify-only
+/// sensor resolves rx alone.
+public protocol EndpointResolver: Sendable {
+    /// Given one discovered service's characteristics, return the endpoints to
+    /// bind, or nil to skip this service. `tx` may be nil (notify-only devices);
+    /// `rx` (the notify source, and the readiness signal) is mandatory.
+    func resolve(service: CBUUID,
+                 characteristics: [CBCharacteristic]) -> (tx: CBCharacteristic?, rx: CBCharacteristic)?
+}
+
+/// Binds a single notify characteristic (UUID `rx`) as the readiness/inbound
+/// source, with no writable tx. `service` scopes it to one service, or nil to
+/// accept the characteristic in whichever service carries it.
+public struct NotifyEndpointResolver: EndpointResolver, @unchecked Sendable {
+    let service: CBUUID?
+    let rx: CBUUID
+    public init(service: CBUUID?, rx: CBUUID) {
+        self.service = service
+        self.rx = rx
+    }
+    public func resolve(service: CBUUID,
+                        characteristics: [CBCharacteristic]) -> (tx: CBCharacteristic?, rx: CBCharacteristic)? {
+        guard self.service == nil || self.service == service else { return nil }
+        guard let notify = characteristics.first(where: { $0.uuid == rx }) else { return nil }
+        return (tx: nil, rx: notify)
+    }
+}
+
 public enum ConnectionState: Sendable, Equatable {
     case ready
     case disconnected(reason: String?)
@@ -47,7 +89,7 @@ public enum TransportError: Error, Sendable, Equatable {
 public protocol Transport: Sendable {
     /// Resolves when Bluetooth is powered on; throws `bluetoothUnavailable` otherwise.
     func waitUntilPoweredOn() async throws
-    /// Discoveries matching the catalog's scan filters. Scanning stops when the
+    /// Discoveries matching the transport's `ScanFilter`. Scanning stops when the
     /// stream is terminated.
     func scan() -> AsyncStream<Discovery>
     /// Connects and resolves once the device is ready (serial endpoints found and
