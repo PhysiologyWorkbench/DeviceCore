@@ -297,8 +297,11 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        if characteristic == rx, let data = characteristic.value {
-            inboundContinuation.yield(data)
+        // An rx notification is inbound stream data, never a read() reply — even if
+        // a read() waiter were registered on the same UUID, it must not consume it.
+        if characteristic == rx {
+            if let data = characteristic.value { inboundContinuation.yield(data) }
+            return
         }
         guard !readWaiters[characteristic.uuid, default: []].isEmpty else { return }
         let cont = readWaiters[characteristic.uuid]!.removeFirst()
