@@ -7,8 +7,8 @@ import Foundation
         HeartRateCodec.parse(Data(bytes))!
     }
 
-    /// 1024-unit RR value → ms, using the codec's rounding.
-    private func rrMs(_ raw: Int) -> Int { Int((Double(raw) / 1024.0 * 1000.0).rounded()) }
+    /// 1024-unit RR value → unrounded ms, matching the codec.
+    private func rrMs(_ raw: Int) -> Double { Double(raw) / 1024.0 * 1000.0 }
 
     @Test func uint8HrNoExtras() {
         // flags 0x00: uint8 HR, no contact support, no energy, no RR.

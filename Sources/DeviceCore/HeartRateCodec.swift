@@ -29,11 +29,11 @@ public enum HeartRateCodec {
         }
         if energyPresent { offset += 2 }
 
-        var rr: [Int] = []
+        var rr: [Double] = []
         if rrPresent {
             while offset + 1 < bytes.count {
                 let raw = Int(bytes[offset]) | (Int(bytes[offset + 1]) << 8)
-                rr.append(Int((Double(raw) / 1024.0 * 1000.0).rounded()))
+                rr.append(Double(raw) / 1024.0 * 1000.0)
                 offset += 2
             }
         }

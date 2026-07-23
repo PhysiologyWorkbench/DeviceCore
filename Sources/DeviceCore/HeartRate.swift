@@ -6,9 +6,11 @@ import Foundation
 /// skin-contact support.
 public struct HeartRate: Sendable, Equatable {
     public let bpm: Int
-    public let rrIntervalsMs: [Int]
+    /// RR intervals in milliseconds, unrounded — the raw 1/1024 s units carried as
+    /// fractional ms so ~0.5 ms quantisation doesn't ride on downstream HRV.
+    public let rrIntervalsMs: [Double]
     public let contact: Bool?
-    public init(bpm: Int, rrIntervalsMs: [Int], contact: Bool?) {
+    public init(bpm: Int, rrIntervalsMs: [Double], contact: Bool?) {
         self.bpm = bpm
         self.rrIntervalsMs = rrIntervalsMs
         self.contact = contact
