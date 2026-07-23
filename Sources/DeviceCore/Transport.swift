@@ -80,9 +80,13 @@ public enum BusyPolicy: Sendable {
 public enum TransportError: Error, Sendable, Equatable {
     case bluetoothUnavailable(String)
     case connectTimeout
+    case connectFailed(String)
     case notConnected
-    case writeFailed(String)
     case unknownPeripheral
+    /// A required characteristic is missing, or the tx characteristic is not writable.
+    case characteristicNotFound(String)
+    case writeFailed(String)
+    case readFailed(String)
 }
 
 /// The BLE side. Knows nothing about the Lovense protocol — it moves bytes.

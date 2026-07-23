@@ -124,7 +124,7 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
     }
 
     public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        finishConnect(peripheral.identifier, .failure(TransportError.writeFailed(error?.localizedDescription ?? "connect failed")))
+        finishConnect(peripheral.identifier, .failure(TransportError.connectFailed(error?.localizedDescription ?? "connect failed")))
     }
 
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
@@ -211,7 +211,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
                     cont.resume(throwing: TransportError.notConnected); return
                 }
                 guard let tx = self.tx else {
-                    cont.resume(throwing: TransportError.writeFailed("notify-only device: no writable characteristic")); return
+                    cont.resume(throwing: TransportError.characteristicNotFound("notify-only device: no writable characteristic")); return
                 }
                 if tx.properties.contains(.writeWithoutResponse) {
                     if self.peripheral.canSendWriteWithoutResponse {
@@ -227,7 +227,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
                     self.responseWaiters.append(cont)
                     self.peripheral.writeValue(bytes, for: tx, type: .withResponse)
                 } else {
-                    cont.resume(throwing: TransportError.writeFailed("tx characteristic not writable"))
+                    cont.resume(throwing: TransportError.characteristicNotFound("tx characteristic not writable"))
                 }
             }
         }
@@ -240,7 +240,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
                     cont.resume(throwing: TransportError.notConnected); return
                 }
                 guard let char = self.discoveredCharacteristics[characteristic] else {
-                    cont.resume(throwing: TransportError.writeFailed("characteristic not discovered")); return
+                    cont.resume(throwing: TransportError.characteristicNotFound("characteristic not discovered")); return
                 }
                 self.readWaiters[characteristic, default: []].append(cont)
                 self.peripheral.readValue(for: char)
@@ -255,7 +255,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     // MARK: CBPeripheralDelegate
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        if let error { return fail(.writeFailed(error.localizedDescription)) }
+        if let error { return fail(.connectFailed(error.localizedDescription)) }
         for service in peripheral.services ?? [] {
             peripheral.discoverCharacteristics(nil, for: service)
         }
@@ -277,7 +277,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         guard characteristic == rx else { return }
-        if let error { return fail(.writeFailed(error.localizedDescription)) }
+        if let error { return fail(.connectFailed(error.localizedDescription)) }
         ready = true
         stateContinuation.yield(.ready)
         onReady?()
@@ -290,7 +290,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         guard !readWaiters[characteristic.uuid, default: []].isEmpty else { return }
         let cont = readWaiters[characteristic.uuid]!.removeFirst()
         if let error {
-            cont.resume(throwing: TransportError.writeFailed(error.localizedDescription))
+            cont.resume(throwing: TransportError.readFailed(error.localizedDescription))
         } else {
             cont.resume(returning: characteristic.value ?? Data())
         }
