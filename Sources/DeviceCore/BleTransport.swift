@@ -15,6 +15,7 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
     private var powerWaiters: [CheckedContinuation<Void, Error>] = []
 
     private var scanContinuation: AsyncStream<Discovery>.Continuation?
+    private var scanGeneration = 0
     private var discovered: [UUID: CBPeripheral] = [:]
 
     private var connections: [UUID: BleConnection] = [:]
@@ -42,13 +43,20 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
     public func scan() -> AsyncStream<Discovery> {
         AsyncStream { continuation in
             queue.async {
+                // Terminate any prior scan stream rather than orphaning it. The
+                // generation guard stops the old stream's onTermination from
+                // clearing this new continuation.
+                self.scanContinuation?.finish()
+                self.scanGeneration += 1
+                let generation = self.scanGeneration
                 self.scanContinuation = continuation
                 if self.poweredOn { self.central.scanForPeripherals(withServices: nil) }
-            }
-            continuation.onTermination = { _ in
-                self.queue.async {
-                    self.central.stopScan()
-                    self.scanContinuation = nil
+                continuation.onTermination = { _ in
+                    self.queue.async {
+                        guard self.scanGeneration == generation else { return }
+                        self.central.stopScan()
+                        self.scanContinuation = nil
+                    }
                 }
             }
         }
@@ -59,6 +67,11 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
             queue.async {
                 guard let peripheral = self.discovered[id.uuid] else {
                     cont.resume(throwing: TransportError.unknownPeripheral); return
+                }
+                // Single-flight: reject a duplicate connect rather than overwriting
+                // (and permanently hanging) the in-flight waiter for this peripheral.
+                guard self.connectWaiters[id.uuid] == nil else {
+                    cont.resume(throwing: TransportError.connectFailed("connect already in progress")); return
                 }
                 let conn = BleConnection(peripheral: peripheral, central: self.central,
                                          resolver: self.resolver, queue: self.queue)
