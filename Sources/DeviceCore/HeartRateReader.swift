@@ -21,7 +21,9 @@ public actor HeartRateReader {
         let (stream, continuation) = AsyncStream.makeStream(of: HeartRate.self)
         reader = Task { [connection] in
             for await chunk in connection.inbound {
-                continuation.yield(HeartRateCodec.parse(chunk))
+                if let hr = HeartRateCodec.parse(chunk) {
+                    continuation.yield(hr)
+                }
             }
             continuation.finish()
         }

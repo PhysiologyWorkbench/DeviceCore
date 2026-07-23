@@ -4,7 +4,7 @@ import Foundation
 
 @Suite struct HeartRateCodecTests {
     private func parse(_ bytes: [UInt8]) -> HeartRate {
-        HeartRateCodec.parse(Data(bytes))
+        HeartRateCodec.parse(Data(bytes))!
     }
 
     /// 1024-unit RR value → ms, using the codec's rounding.
@@ -57,5 +57,13 @@ import Foundation
         let hr = parse([0x11, 0x02, 0x01, 0x00, 0x02])
         #expect(hr.bpm == 258)
         #expect(hr.rrIntervalsMs == [rrMs(512)])
+    }
+
+    @Test func shortOrEmptyFrameReturnsNil() {
+        // Empty, flags-only, and a uint16-HR flag with only one HR byte are all
+        // too short — skipped, not trapped.
+        #expect(HeartRateCodec.parse(Data()) == nil)
+        #expect(HeartRateCodec.parse(Data([0x00])) == nil)
+        #expect(HeartRateCodec.parse(Data([0x01, 0x2C])) == nil)
     }
 }
