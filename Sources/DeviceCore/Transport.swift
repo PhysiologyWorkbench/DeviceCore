@@ -89,6 +89,21 @@ public enum TransportError: Error, Sendable, Equatable {
     case readFailed(String)
 }
 
+extension TransportError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .bluetoothUnavailable(let state): return "Bluetooth unavailable (\(state))"
+        case .connectTimeout: return "Connection timed out"
+        case .connectFailed(let detail): return "Connection failed: \(detail)"
+        case .notConnected: return "Device not connected"
+        case .unknownPeripheral: return "Unknown device"
+        case .characteristicNotFound(let detail): return "Characteristic not found: \(detail)"
+        case .writeFailed(let detail): return "Write failed: \(detail)"
+        case .readFailed(let detail): return "Read failed: \(detail)"
+        }
+    }
+}
+
 /// The BLE side. Knows nothing about the Lovense protocol — it moves bytes.
 public protocol Transport: Sendable {
     /// Resolves when Bluetooth is powered on; throws `bluetoothUnavailable` otherwise.
