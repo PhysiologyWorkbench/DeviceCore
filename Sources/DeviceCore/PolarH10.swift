@@ -28,8 +28,17 @@ public enum PolarH10 {
         data.first.map(Int.init)
     }
 
-    // Deferred: PMD (Polar Measurement Data) carries the high-rate ACC/ECG streams
-    // on service FB005C80-02E7-F387-1CAD-8ACD2D8DF0C8 (control point …C81, data
-    // …C82) and needs a control-point handshake + multi-frame binary decode —
-    // unlike this notify-only HR path. Add as a separate profile/reader when needed.
+    /// Polar Measurement Data — the high-rate ECG/ACC streams. Unlike the notify-only
+    /// HR path this needs a control-point handshake and a binary multi-frame decode
+    /// (`PmdCodec`, `PmdReader`). The service is not advertised, so `scanFilter`
+    /// still finds the strap by name; the connection binds the control point as `tx`
+    /// and the data characteristic as `rx`, and `PmdReader` subscribes the control
+    /// point separately for command responses.
+    public static var pmdService: CBUUID { CBUUID(string: "FB005C80-02E7-F387-1CAD-8ACD2D8DF0C8") }
+    public static var pmdControlPoint: CBUUID { CBUUID(string: "FB005C81-02E7-F387-1CAD-8ACD2D8DF0C8") }
+    public static var pmdData: CBUUID { CBUUID(string: "FB005C82-02E7-F387-1CAD-8ACD2D8DF0C8") }
+
+    public static var pmdEndpointResolver: EndpointResolver {
+        FixedEndpointResolver(service: pmdService, tx: pmdControlPoint, rx: pmdData)
+    }
 }
