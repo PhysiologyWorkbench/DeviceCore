@@ -43,6 +43,12 @@ public struct PmdEcgFrame: Sendable, Equatable {
     public let samplesMicrovolts: [Int32]
     public let timestampNs: UInt64
     public let sampleRate: Double
+
+    public init(samplesMicrovolts: [Int32], timestampNs: UInt64, sampleRate: Double) {
+        self.samplesMicrovolts = samplesMicrovolts
+        self.timestampNs = timestampNs
+        self.sampleRate = sampleRate
+    }
 }
 
 /// One accelerometer frame: (x, y, z) samples in milli-g, the device timestamp of
@@ -51,6 +57,12 @@ public struct PmdAccFrame: Sendable, Equatable {
     public let samples: [SIMD3<Int32>]
     public let timestampNs: UInt64
     public let sampleRate: Double
+
+    public init(samples: [SIMD3<Int32>], timestampNs: UInt64, sampleRate: Double) {
+        self.samples = samples
+        self.timestampNs = timestampNs
+        self.sampleRate = sampleRate
+    }
 }
 
 /// Decodes the PMD binary protocol: control-point command framing and responses,
