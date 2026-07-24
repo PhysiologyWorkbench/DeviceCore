@@ -12,6 +12,16 @@ import Foundation
         return Data(bytes)
     }
 
+    @Test func measurementTypeDemuxKey() {
+        #expect(PmdCodec.measurementType(of: frame(type: 0x00, timestamp: 1, frameType: 0x00, content: [])) == .ecg)
+        #expect(PmdCodec.measurementType(of: frame(type: 0x02, timestamp: 1, frameType: 0x01, content: [])) == .acc)
+        // The two high header bits are flags, not part of the type.
+        #expect(PmdCodec.measurementType(of: Data([0x82])) == .acc)
+        // Unknown measurement, and empty data, are nobody's frames.
+        #expect(PmdCodec.measurementType(of: Data([0x05])) == nil)
+        #expect(PmdCodec.measurementType(of: Data()) == nil)
+    }
+
     // MARK: Control point
 
     @Test func startAndStopCommandBytes() {

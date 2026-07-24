@@ -115,6 +115,13 @@ public enum PmdCodec {
 
     // MARK: Data frames
 
+    /// The measurement a data frame belongs to, from its header type byte — the
+    /// demux key when several measurements stream on the shared data
+    /// characteristic. Nil for anything that is not a known measurement's frame.
+    public static func measurementType(of data: Data) -> PmdMeasurement? {
+        data.first.flatMap { PmdMeasurement(rawValue: $0 & 0x3F) }
+    }
+
     /// Decodes an ECG data frame (uncompressed type 0, 3-byte signed µV samples).
     /// Returns nil on a malformed or compressed frame.
     public static func parseEcg(_ data: Data, sampleRate: Double) -> PmdEcgFrame? {
