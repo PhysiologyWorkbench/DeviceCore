@@ -62,6 +62,27 @@ public struct NotifyEndpointResolver: EndpointResolver, @unchecked Sendable {
     }
 }
 
+/// Binds an explicit writable `tx` and notify `rx` by UUID within one service —
+/// for devices with a known control-point + data-stream characteristic pair (e.g.
+/// Polar PMD), where neither the serial heuristic nor the notify-only resolver fits.
+public struct FixedEndpointResolver: EndpointResolver, @unchecked Sendable {
+    let service: CBUUID
+    let tx: CBUUID
+    let rx: CBUUID
+    public init(service: CBUUID, tx: CBUUID, rx: CBUUID) {
+        self.service = service
+        self.tx = tx
+        self.rx = rx
+    }
+    public func resolve(service: CBUUID,
+                        characteristics: [CBCharacteristic]) -> (tx: CBCharacteristic?, rx: CBCharacteristic)? {
+        guard self.service == service else { return nil }
+        guard let txChar = characteristics.first(where: { $0.uuid == tx }),
+              let rxChar = characteristics.first(where: { $0.uuid == rx }) else { return nil }
+        return (tx: txChar, rx: rxChar)
+    }
+}
+
 public enum ConnectionState: Sendable, Equatable {
     case ready
     case disconnected(reason: String?)
@@ -132,6 +153,13 @@ public protocol DeviceConnection: Sendable {
     /// (any service found during connect setup qualifies, not only the endpoint
     /// resolver's match).
     func read(characteristic: CBUUID) async throws -> Data
+    /// Enables notifications on an additional discovered characteristic and returns
+    /// its own inbound stream, distinct from `inbound` (the resolver's rx). For
+    /// devices whose control-point responses arrive on a second notify
+    /// characteristic (e.g. Polar PMD's control point). Resolves once the
+    /// subscription is confirmed, so a following command write cannot race ahead of
+    /// it. The stream ends when the connection drops.
+    func subscribe(_ characteristic: CBUUID) async throws -> AsyncStream<Data>
     func disconnect() async
 }
 

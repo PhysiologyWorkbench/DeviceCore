@@ -180,6 +180,11 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     private var pendingWrites: [(Data, CheckedContinuation<Bool, Error>)] = []
     /// Waiters for a characteristic read, FIFO per characteristic.
     private var readWaiters: [CBUUID: [CheckedContinuation<Data, Error>]] = [:]
+    /// Extra notify streams bound by `subscribe`, keyed by characteristic UUID —
+    /// their notifications route here rather than to `inbound` or a read waiter.
+    private var subscriptions: [CBUUID: AsyncStream<Data>.Continuation] = [:]
+    /// Waiters for a `subscribe`'s notify-enabled confirmation, one per characteristic.
+    private var subscribeWaiters: [CBUUID: CheckedContinuation<Void, Error>] = [:]
 
     init(peripheral: CBPeripheral, central: CBCentralManager, resolver: EndpointResolver, queue: DispatchQueue) {
         self.peripheral = peripheral
@@ -213,6 +218,11 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         let readers = readWaiters.values.flatMap { $0 }
         readWaiters.removeAll()
         readers.forEach { $0.resume(throwing: TransportError.notConnected) }
+        subscriptions.values.forEach { $0.finish() }
+        subscriptions.removeAll()
+        let subscribers = Array(subscribeWaiters.values)
+        subscribeWaiters.removeAll()
+        subscribers.forEach { $0.resume(throwing: TransportError.notConnected) }
     }
 
     // MARK: DeviceConnection
@@ -261,6 +271,24 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         }
     }
 
+    func subscribe(_ characteristic: CBUUID) async throws -> AsyncStream<Data> {
+        let (stream, continuation) = AsyncStream.makeStream(of: Data.self)
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            queue.async {
+                guard self.ready else {
+                    cont.resume(throwing: TransportError.notConnected); return
+                }
+                guard let char = self.discoveredCharacteristics[characteristic] else {
+                    cont.resume(throwing: TransportError.characteristicNotFound("characteristic not discovered")); return
+                }
+                self.subscriptions[characteristic] = continuation
+                self.subscribeWaiters[characteristic] = cont
+                self.peripheral.setNotifyValue(true, for: char)
+            }
+        }
+        return stream
+    }
+
     func disconnect() async {
         queue.async { self.central.cancelPeripheralConnection(self.peripheral) }
     }
@@ -289,11 +317,20 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        guard characteristic == rx else { return }
-        if let error { return fail(.connectFailed(error.localizedDescription)) }
-        ready = true
-        stateContinuation.yield(.ready)
-        onReady?()
+        if characteristic == rx {
+            if let error { return fail(.connectFailed(error.localizedDescription)) }
+            ready = true
+            stateContinuation.yield(.ready)
+            onReady?()
+            return
+        }
+        guard let waiter = subscribeWaiters.removeValue(forKey: characteristic.uuid) else { return }
+        if let error {
+            subscriptions.removeValue(forKey: characteristic.uuid)?.finish()
+            waiter.resume(throwing: TransportError.characteristicNotFound(error.localizedDescription))
+        } else {
+            waiter.resume()
+        }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -301,6 +338,12 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         // a read() waiter were registered on the same UUID, it must not consume it.
         if characteristic == rx {
             if let data = characteristic.value { inboundContinuation.yield(data) }
+            return
+        }
+        // A subscribed characteristic's notification routes to its own stream, never
+        // to a read() waiter registered on the same UUID.
+        if let subscription = subscriptions[characteristic.uuid] {
+            if let data = characteristic.value { subscription.yield(data) }
             return
         }
         guard !readWaiters[characteristic.uuid, default: []].isEmpty else { return }
