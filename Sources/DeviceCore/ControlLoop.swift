@@ -87,7 +87,10 @@ public actor ControlLoop {
         ticker = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: interval)
-                await self?.tick(dt: seconds)
+                // Ends with the loop: a loop dropped without `shutdown` must not
+                // leave its ticker sleeping forever.
+                guard let self else { return }
+                await self.tick(dt: seconds)
             }
         }
     }
@@ -156,9 +159,10 @@ public actor ControlLoop {
         publish()
     }
 
-    /// Stops output and ends the tick task.
-    public func shutdown() async {
-        await hardStop(.operatorStop)
+    /// Stops output and ends the tick task. The reason says why the loop is
+    /// going away — a lost link is not an operator stop.
+    public func shutdown(_ reason: StopReason = .operatorStop) async {
+        await hardStop(reason)
         ticker?.cancel()
         ticker = nil
         statusContinuation.finish()
