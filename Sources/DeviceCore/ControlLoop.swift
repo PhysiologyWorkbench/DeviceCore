@@ -35,7 +35,7 @@ public struct ControlStatus: Sendable, Equatable {
 public actor ControlLoop {
     private let session: DeviceSession
     private let tick: Duration
-    private let limits: SafetyLimits
+    private var limits: SafetyLimits
     private let statusContinuation: AsyncStream<ControlStatus>.Continuation
 
     /// The applied level — what the actuator was last known to be at, not what the
@@ -82,6 +82,12 @@ public actor ControlLoop {
                 await self?.tick(dt: seconds)
             }
         }
+    }
+
+    /// Replaces the envelope. A tightened ceiling takes effect on the next tick,
+    /// which pulls the level back inside it rather than honouring the old one.
+    public func setLimits(_ limits: SafetyLimits) {
+        self.limits = limits
     }
 
     /// The level the control signal wants, 0…1. Last one before the next tick
