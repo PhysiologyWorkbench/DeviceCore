@@ -94,6 +94,29 @@ import Foundation
         #expect(await loop.appliedLevel == 0)
     }
 
+    @Test func aTickInFlightWhenAHardStopLandsCannotRestoreItsLevel() async throws {
+        let (loop, connection) = try await loop()
+        await loop.setTarget(0.6)
+
+        // Suspend the tick's write in flight, the way a radio would.
+        connection.holdNextWrite()
+        let tick = Task { await loop.tick(dt: 1) }
+        await connection.waitForHeldWrite()
+
+        // The stop lands at that suspension point: its zero reaches the device
+        // and its bookkeeping completes before the tick resumes.
+        await loop.hardStop()
+        connection.releaseHeldWrite()
+        await tick.value
+
+        // The resumed tick must not commit the level its write carried — the
+        // next ticks would fade down from it, re-energising a stopped toy.
+        #expect(await loop.appliedLevel == 0)
+        let writes = setpoints(connection).count
+        for _ in 0..<3 { await loop.tick(dt: 1) }
+        #expect(setpoints(connection).count == writes)
+    }
+
     @Test func fadesDownWhenTheSensorGoesQuiet() async throws {
         let (loop, connection) = try await loop()
         await loop.setTarget(0.6)

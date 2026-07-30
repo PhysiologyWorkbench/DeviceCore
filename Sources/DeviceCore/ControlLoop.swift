@@ -49,6 +49,11 @@ public actor ControlLoop {
     /// Seconds since the last `heartbeat`, advanced by the tick rather than read
     /// off a clock — the watchdog is then as deterministic as everything else here.
     private var sinceInput: TimeInterval = 0
+    /// Bumped when a hard stop begins. A tick suspended in a write when the stop
+    /// lands sees the change on resume and discards its bookkeeping — otherwise it
+    /// would record a level the stop's zero has already overwritten on the device,
+    /// and the next tick would fade down from it, re-energising a stopped toy.
+    private var stopEpoch = 0
     private var ticker: Task<Void, Never>?
 
     public let status: AsyncStream<ControlStatus>
@@ -119,6 +124,7 @@ public actor ControlLoop {
     public func hardStop(_ reason: StopReason = .operatorStop) async {
         target = 0
         stopped = reason
+        stopEpoch += 1
         _ = try? await session.setVibration(0, 0, ifBusy: .wait)
         level = 0
         lastSent = 0
@@ -157,6 +163,7 @@ public actor ControlLoop {
         // A zero is the tail of a fade or a stop, and must not be dropped; every
         // other level is superseded by the next tick if the link is busy.
         let policy: BusyPolicy = next == 0 ? .wait : .drop
+        let epoch = stopEpoch
         do {
             guard try await session.setVibration(0, next, ifBusy: policy) else { return }
         } catch {
@@ -165,6 +172,9 @@ public actor ControlLoop {
             fadeDown(.actuatorLost)
             return
         }
+        // A hard stop that landed while the write was in flight has already zeroed
+        // the device and the bookkeeping; committing `next` here would undo it.
+        guard epoch == stopEpoch else { return }
         level = next
         lastSent = next
         publish()

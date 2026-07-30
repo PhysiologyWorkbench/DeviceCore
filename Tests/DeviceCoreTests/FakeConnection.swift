@@ -22,6 +22,9 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     private var storedWrites: [Write] = []
     private var linkBusy = false
     private var connected = true
+    private var holdNext = false
+    private var heldWrite: CheckedContinuation<Void, Never>?
+    private var arrivalWaiter: CheckedContinuation<Void, Never>?
     private let inboundContinuation: AsyncStream<Data>.Continuation
     private let stateContinuation: AsyncStream<ConnectionState>.Continuation
 
@@ -51,9 +54,49 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
         lock.withLock { linkBusy = busy }
     }
 
+    /// Suspends the next write until `releaseHeldWrite`, letting later writes
+    /// through — so a test can run other actor work while one write is in flight.
+    func holdNextWrite() {
+        lock.withLock { holdNext = true }
+    }
+
+    /// Resumes once a write is suspended at the hold.
+    func waitForHeldWrite() async {
+        await withCheckedContinuation { continuation in
+            let alreadyHeld: Bool = lock.withLock {
+                if heldWrite != nil { return true }
+                arrivalWaiter = continuation
+                return false
+            }
+            if alreadyHeld { continuation.resume() }
+        }
+    }
+
+    func releaseHeldWrite() {
+        let held = lock.withLock { () -> CheckedContinuation<Void, Never>? in
+            defer { heldWrite = nil }
+            return heldWrite
+        }
+        held?.resume()
+    }
+
     // MARK: DeviceConnection
 
     func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool {
+        let hold = lock.withLock { () -> Bool in
+            defer { holdNext = false }
+            return holdNext
+        }
+        if hold {
+            await withCheckedContinuation { continuation in
+                let arrival = lock.withLock { () -> CheckedContinuation<Void, Never>? in
+                    heldWrite = continuation
+                    defer { arrivalWaiter = nil }
+                    return arrivalWaiter
+                }
+                arrival?.resume()
+            }
+        }
         let text = String(decoding: bytes, as: UTF8.self)
         let dropped: Bool = try lock.withLock {
             guard connected else { throw TransportError.notConnected }
