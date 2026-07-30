@@ -6,7 +6,9 @@ import Foundation
 /// `Codec` and a `DeviceCatalog`, not to Lovense directly.
 ///
 /// Queries (`identify`, `battery`) are request/response: one is outstanding at a
-/// time. Control setters (`setVibration`, …) are fire-and-forget writes.
+/// time. Control setters (`setVibration`, …) write and report whether the bytes
+/// reached the link — under `.drop` they may not have, and a coalescing sender
+/// must not mistake a dropped write for the device's current state.
 public actor DeviceSession {
     public let id: PeripheralID
     /// The resolved model, available after `identify`.
@@ -62,29 +64,34 @@ public actor DeviceSession {
 
     /// Sets the `ordinal`-th vibrator (0-based) to `level` in 0…1. On a single-
     /// vibrator toy the wire command is unnumbered; on a multi it is `Vibrate{n}:`.
-    public func setVibration(_ ordinal: Int, _ level: Double, ifBusy: BusyPolicy = .wait) async throws {
+    /// Returns whether the bytes were sent (always true for `.wait`).
+    @discardableResult
+    public func setVibration(_ ordinal: Int, _ level: Double, ifBusy: BusyPolicy = .wait) async throws -> Bool {
         let vibrators = try features { if case let .vibrate(index, range) = $0 { (index, range) } else { nil } }
         guard vibrators.indices.contains(ordinal) else { throw SessionError.featureUnavailable("vibrate[\(ordinal)]") }
         let (index, range) = vibrators[ordinal]
         let actuator = vibrators.count > 1 ? index + 1 : nil
-        try await connection.write(codec.encode(.vibrate(actuator: actuator, level: scale(level, into: range))), ifBusy: ifBusy)
+        return try await connection.write(codec.encode(.vibrate(actuator: actuator, level: scale(level, into: range))), ifBusy: ifBusy)
     }
 
     /// Sets rotation speed to `level` in 0…1.
-    public func setRotation(_ level: Double, ifBusy: BusyPolicy = .wait) async throws {
+    @discardableResult
+    public func setRotation(_ level: Double, ifBusy: BusyPolicy = .wait) async throws -> Bool {
         let range = try firstRange("rotate") { if case let .rotate(_, r) = $0 { r } else { nil } }
-        try await connection.write(codec.encode(.rotate(level: scale(level, into: range))), ifBusy: ifBusy)
+        return try await connection.write(codec.encode(.rotate(level: scale(level, into: range))), ifBusy: ifBusy)
     }
 
     /// Reverses the direction of rotation.
-    public func reverseRotation(ifBusy: BusyPolicy = .wait) async throws {
+    @discardableResult
+    public func reverseRotation(ifBusy: BusyPolicy = .wait) async throws -> Bool {
         try await connection.write(codec.encode(.rotateChange), ifBusy: ifBusy)
     }
 
     /// Sets the air/constriction level to `level` in 0…1 (`Air:Level:n;`).
-    public func setAir(_ level: Double, ifBusy: BusyPolicy = .wait) async throws {
+    @discardableResult
+    public func setAir(_ level: Double, ifBusy: BusyPolicy = .wait) async throws -> Bool {
         let range = try firstRange("constrict") { if case let .constrict(_, r) = $0 { r } else { nil } }
-        try await connection.write(codec.encode(.constrict(level: scale(level, into: range))), ifBusy: ifBusy)
+        return try await connection.write(codec.encode(.constrict(level: scale(level, into: range))), ifBusy: ifBusy)
     }
 
     public func disconnect() async {
@@ -99,8 +106,11 @@ public actor DeviceSession {
     private func awaitReply(timeout: Duration,
                             matching match: @escaping @Sendable (DeviceReply) -> Bool) async throws -> DeviceReply {
         ensureReading()
+        // `try`, not `try?`: a cancelled sleep must end the task, not fall through
+        // to fail whichever waiter is registered by then — which, once this query
+        // has been answered and the `defer` has cancelled, is the *next* query's.
         let timeoutTask = Task { [weak self] in
-            try? await Task.sleep(for: timeout)
+            try await Task.sleep(for: timeout)
             await self?.failWaiter(TransportError.connectTimeout)
         }
         defer { timeoutTask.cancel() }
