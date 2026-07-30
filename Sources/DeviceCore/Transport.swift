@@ -98,6 +98,15 @@ public enum BusyPolicy: Sendable {
     case drop
 }
 
+/// Which GATT write to use when the tx characteristic advertises both. The
+/// default keeps the low-latency unacknowledged path every shipping caller wants;
+/// `.withResponse` exists because some vendors' own apps use Write Request (the
+/// Lovense app does), and comparing the two is a measurement worth making.
+public enum WriteType: Sendable {
+    case preferWithoutResponse
+    case withResponse
+}
+
 public enum TransportError: Error, Sendable, Equatable {
     case bluetoothUnavailable(String)
     case connectTimeout
@@ -143,10 +152,11 @@ public protocol DeviceConnection: Sendable {
     var id: PeripheralID { get }
     var inbound: AsyncStream<Data> { get }
     var state: AsyncStream<ConnectionState> { get }
-    /// Writes command bytes. Prefers write-without-response when the characteristic
-    /// offers it. Returns whether the bytes were sent (always true for `.wait`).
+    /// Writes command bytes with the requested write type, falling back to
+    /// whichever the characteristic actually offers. Returns whether the bytes
+    /// were sent (always true for `.wait` and for write-with-response).
     @discardableResult
-    func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool
+    func write(_ bytes: Data, ifBusy: BusyPolicy, type: WriteType) async throws -> Bool
     /// Reads a GATT characteristic's current value directly (e.g. standard Battery
     /// Level, `0x180F`/`0x2A19`) — for values that are read, not pushed over a
     /// serial notify channel. The characteristic must have been discovered
@@ -164,9 +174,14 @@ public protocol DeviceConnection: Sendable {
 }
 
 public extension DeviceConnection {
+    /// Convenience: write with the default write type.
+    @discardableResult
+    func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool {
+        try await write(bytes, ifBusy: ifBusy, type: .preferWithoutResponse)
+    }
     /// Convenience: write and wait for the link to be ready.
     @discardableResult
     func write(_ bytes: Data) async throws -> Bool {
-        try await write(bytes, ifBusy: .wait)
+        try await write(bytes, ifBusy: .wait, type: .preferWithoutResponse)
     }
 }

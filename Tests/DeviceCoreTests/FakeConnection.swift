@@ -10,6 +10,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     struct Write {
         let text: String
         let ifBusy: BusyPolicy
+        let type: WriteType
 
         var isDrop: Bool { if case .drop = ifBusy { true } else { false } }
     }
@@ -82,7 +83,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
 
     // MARK: DeviceConnection
 
-    func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool {
+    func write(_ bytes: Data, ifBusy: BusyPolicy, type: WriteType) async throws -> Bool {
         let hold = lock.withLock { () -> Bool in
             defer { holdNext = false }
             return holdNext
@@ -101,7 +102,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
         let dropped: Bool = try lock.withLock {
             guard connected else { throw TransportError.notConnected }
             guard linkBusy, case .drop = ifBusy else {
-                storedWrites.append(Write(text: text, ifBusy: ifBusy))
+                storedWrites.append(Write(text: text, ifBusy: ifBusy, type: type))
                 return false
             }
             return true

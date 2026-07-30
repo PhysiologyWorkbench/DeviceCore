@@ -227,7 +227,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
 
     // MARK: DeviceConnection
 
-    func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool {
+    func write(_ bytes: Data, ifBusy: BusyPolicy, type: WriteType) async throws -> Bool {
         try await withCheckedThrowingContinuation { cont in
             queue.async {
                 guard self.ready else {
@@ -236,7 +236,10 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
                 guard let tx = self.tx else {
                     cont.resume(throwing: TransportError.characteristicNotFound("notify-only device: no writable characteristic")); return
                 }
-                if tx.properties.contains(.writeWithoutResponse) {
+                if type == .withResponse, tx.properties.contains(.write) {
+                    self.responseWaiters.append(cont)
+                    self.peripheral.writeValue(bytes, for: tx, type: .withResponse)
+                } else if tx.properties.contains(.writeWithoutResponse) {
                     if self.peripheral.canSendWriteWithoutResponse {
                         self.peripheral.writeValue(bytes, for: tx, type: .withoutResponse)
                         cont.resume(returning: true)
