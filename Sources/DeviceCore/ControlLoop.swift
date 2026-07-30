@@ -49,6 +49,10 @@ public actor ControlLoop {
     /// Seconds since the last `heartbeat`, advanced by the tick rather than read
     /// off a clock — the watchdog is then as deterministic as everything else here.
     private var sinceInput: TimeInterval = 0
+    /// Whether the watchdog counts. Engaged by `expectInput(true)` for exactly
+    /// the life of a session: a loop that is merely connected has no sensor
+    /// feeding it, and must not be faulted for that silence.
+    private var expectingInput = false
     /// Bumped when a hard stop begins. A tick suspended in a write when the stop
     /// lands sees the change on resume and discards its bookkeeping — otherwise it
     /// would record a level the stop's zero has already overwritten on the device,
@@ -75,8 +79,7 @@ public actor ControlLoop {
         self.statusContinuation = continuation
     }
 
-    /// Begins ticking. The watchdog's grace period starts now, so a loop is not
-    /// immediately faulted for input it has not had time to receive.
+    /// Begins ticking. The watchdog stays disengaged until `expectInput(true)`.
     public func start() {
         guard ticker == nil else { return }
         sinceInput = 0
@@ -108,6 +111,14 @@ public actor ControlLoop {
         sinceInput = 0
     }
 
+    /// Engages the watchdog: from now until `release`, `heartbeat` must keep
+    /// arriving within the limits' `inputTimeout` or the loop fades down. Called
+    /// when a session starts — the grace period starts here.
+    public func expectInput(_ expecting: Bool) {
+        expectingInput = expecting
+        sinceInput = 0
+    }
+
     /// Ramps to zero at the fall-rate limit and stops. New targets are ignored
     /// from this moment, so the fade cannot be fought by a control signal that has
     /// not noticed yet.
@@ -131,10 +142,12 @@ public actor ControlLoop {
         publish()
     }
 
-    /// Clears the stop so the loop can be armed again. Deliberately separate from
-    /// acknowledging it — nothing resumes on its own.
+    /// Clears the stop so the loop can be armed again, and disengages the
+    /// watchdog — the session is over, no input is owed. Deliberately separate
+    /// from acknowledging the stop: nothing resumes on its own.
     public func release() {
         stopped = nil
+        expectingInput = false
         sinceInput = 0
         publish()
     }
@@ -151,7 +164,7 @@ public actor ControlLoop {
     /// of wall-clock timing; the tick task is its only other caller.
     func tick(dt: TimeInterval) async {
         sinceInput += dt
-        if stopped == nil, sinceInput >= limits.inputTimeout.seconds {
+        if stopped == nil, expectingInput, sinceInput >= limits.inputTimeout.seconds {
             fadeDown(.sensorLost)
         }
 

@@ -119,6 +119,7 @@ import Foundation
 
     @Test func fadesDownWhenTheSensorGoesQuiet() async throws {
         let (loop, connection) = try await loop()
+        await loop.expectInput(true)
         await loop.setTarget(0.6)
         for _ in 0..<3 { await loop.heartbeat(); await loop.tick(dt: 1) }
         #expect(setpoints(connection) == [vibrate(4), vibrate(8), vibrate(12)])
@@ -130,6 +131,28 @@ import Foundation
         #expect(await loop.stopReason == .sensorLost)
         #expect(setpoints(connection) == [vibrate(4), vibrate(8), vibrate(12),
                                           vibrate(6), vibrate(0)])
+    }
+
+    @Test func watchdogIsIdleUntilInputIsExpected() async throws {
+        let (loop, connection) = try await loop()
+        // A connected-but-idle loop gets no heartbeats — there is no sensor
+        // feeding it yet — and must not be faulted for that: a held Test press
+        // keeps running well past the input timeout.
+        await loop.setTarget(0.3)
+        for _ in 0..<8 { await loop.tick(dt: 1) }
+        #expect(await loop.stopReason == nil)
+        #expect(setpoints(connection).last == vibrate(6))
+
+        // Once a session engages it, the same silence trips it.
+        await loop.expectInput(true)
+        for _ in 0..<8 { await loop.tick(dt: 1) }
+        #expect(await loop.stopReason == .sensorLost)
+
+        // And release disengages it along with clearing the stop, so the next
+        // idle stretch starts clean.
+        await loop.release()
+        for _ in 0..<8 { await loop.tick(dt: 1) }
+        #expect(await loop.stopReason == nil)
     }
 
     @Test func stopsWhenTheLinkFails() async throws {
