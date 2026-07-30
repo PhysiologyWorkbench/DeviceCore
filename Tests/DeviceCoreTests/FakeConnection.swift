@@ -21,6 +21,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     private let lock = NSLock()
     private var storedWrites: [Write] = []
     private var linkBusy = false
+    private var connected = true
     private let inboundContinuation: AsyncStream<Data>.Continuation
     private let stateContinuation: AsyncStream<ConnectionState>.Continuation
 
@@ -54,7 +55,8 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
 
     func write(_ bytes: Data, ifBusy: BusyPolicy) async throws -> Bool {
         let text = String(decoding: bytes, as: UTF8.self)
-        let dropped: Bool = lock.withLock {
+        let dropped: Bool = try lock.withLock {
+            guard connected else { throw TransportError.notConnected }
             guard linkBusy, case .drop = ifBusy else {
                 storedWrites.append(Write(text: text, ifBusy: ifBusy))
                 return false
@@ -89,6 +91,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     }
 
     func disconnect() async {
+        lock.withLock { connected = false }
         stateContinuation.yield(.disconnected(reason: nil))
         inboundContinuation.finish()
         stateContinuation.finish()
