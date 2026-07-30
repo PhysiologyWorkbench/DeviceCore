@@ -132,9 +132,13 @@ public actor ControlLoop {
     /// Cuts output now — one zero write, not rate-limited, not coalesced. This is
     /// the control the safety case rests on, so it uses `.wait`: a dropped stop is
     /// not acceptable in the way a dropped setpoint is.
+    ///
+    /// On a loop already stopping, the cut still happens — an operator ending a
+    /// fade early must always work — but the first reason sticks: a distress fade
+    /// cut short is still a distress stop, and the record must say so.
     public func hardStop(_ reason: StopReason = .operatorStop) async {
         target = 0
-        stopped = reason
+        if stopped == nil { stopped = reason }
         stopEpoch += 1
         _ = try? await session.setVibration(0, 0, ifBusy: .wait)
         level = 0

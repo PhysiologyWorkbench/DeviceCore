@@ -84,6 +84,18 @@ import Foundation
         #expect(setpoints(connection) == [vibrate(4), vibrate(0), vibrate(4)])
     }
 
+    @Test func hardStopDuringAFadeCutsButKeepsTheFirstReason() async throws {
+        let (loop, _) = try await loop()
+        await loop.setTarget(0.6)
+        await loop.tick(dt: 1)
+        await loop.fadeDown(.distress)
+        // An operator ending the fade early must still cut the output, but the
+        // stop stays a distress stop — the record must say what really happened.
+        await loop.hardStop()
+        #expect(await loop.appliedLevel == 0)
+        #expect(await loop.stopReason == .distress)
+    }
+
     @Test func hardStopIsNotRateLimited() async throws {
         let (loop, _) = try await loop(SafetyLimits(ceiling: 1, riseRatePerSecond: 1,
                                                     fallRatePerSecond: 0.01))
