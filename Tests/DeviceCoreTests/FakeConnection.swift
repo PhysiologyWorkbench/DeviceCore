@@ -22,6 +22,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     private let lock = NSLock()
     private var storedWrites: [Write] = []
     private var linkBusy = false
+    private var reportedTouchMode: Int? = 0
     private var connected = true
     private var holdNext = false
     private var heldWrite: CheckedContinuation<Void, Never>?
@@ -53,6 +54,19 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     /// the fake does not model the queue, only the outcome the caller sees.
     func setBusy(_ busy: Bool) {
         lock.withLock { linkBusy = busy }
+    }
+
+    /// What the toy reports for `TouchMode;`: 5 is the mode `ensureStoppable`
+    /// exists to catch, and `nil` is a toy that has no `TouchMode` and answers with
+    /// silence, as Edge 2 and Solace Pro do.
+    func setReportedTouchMode(_ raw: Int?) {
+        lock.withLock { reportedTouchMode = raw }
+    }
+
+    /// Pushes an unsolicited notification — a sensor frame, say, which no write
+    /// asks for.
+    func push(_ bytes: Data) {
+        inboundContinuation.yield(bytes)
     }
 
     /// Suspends the next write until `releaseHeldWrite`, letting later writes
@@ -111,6 +125,8 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
         switch text {
         case "DeviceType;": reply("P:243:0102030405;")
         case "Battery;":    reply("78;")
+        case "TouchMode;":
+            if let mode = lock.withLock({ reportedTouchMode }) { reply("TouchMode:\(mode);") }
         default:            break
         }
         return true

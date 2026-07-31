@@ -21,6 +21,7 @@ public actor DeviceSession {
     private var reader: Task<Void, Never>?
     private var waiter: (match: @Sendable (DeviceReply) -> Bool,
                          continuation: CheckedContinuation<DeviceReply, Error>)?
+    private var depthContinuation: AsyncStream<TouchFrame>.Continuation?
 
     public init(connection: DeviceConnection,
                 catalog: DeviceCatalog,
@@ -60,6 +61,78 @@ public actor DeviceSession {
         return percent
     }
 
+    /// Reads the runtime actuator list (`GetCap;`).
+    ///
+    /// Worth asking even when the catalog answered: the vendored config carries no
+    /// feature rows at all for Mission 2 or Ferri, so this is the only description
+    /// of their actuators that exists. Not every model supports it — Edge 2 is
+    /// silent, Gemini answers `unkown` — so a `nil` return is a normal outcome.
+    public func capabilities(timeout: Duration = .seconds(2)) async throws -> Capabilities? {
+        try await connection.write(codec.encode(.capabilities))
+        let reply = try? await awaitReply(timeout: timeout) {
+            if case .capabilities = $0 { true } else { false }
+        }
+        guard case let .capabilities(capabilities) = reply else { return nil }
+        return capabilities
+    }
+
+    // MARK: Sensor input
+
+    /// The Touch-Sense position stream, enabled for the life of the returned
+    /// stream and disabled when it terminates.
+    ///
+    /// **Silence is the normal resting state.** The stream is motion-gated: 90 s of
+    /// holding perfectly still produced no frames at all, and movement resumed them
+    /// with nothing re-enabled. So silence is not an error, not end-of-stream, and
+    /// not evidence the sensor was switched off — do not build a watchdog that
+    /// infers disablement from it. A consumer needing "present versus removed"
+    /// cannot get it from here either; at rest the two are identical on the wire.
+    ///
+    /// The frame rate is bound by the 30 ms connection interval rather than by the
+    /// sensor, and writing at up to 33 Hz costs it nothing.
+    public func depth() async throws -> AsyncStream<TouchFrame> {
+        ensureReading()
+        // Unconditionally, every connection: `TouchMode` resets to 0 across a power
+        // cycle, so there is never a previous session's enable to inherit.
+        try await connection.write(codec.encode(.setTouchMode(.stream)))
+        depthContinuation?.finish()
+        let (stream, continuation) = AsyncStream.makeStream(of: TouchFrame.self)
+        continuation.onTermination = { [weak self] _ in
+            Task { await self?.endDepth() }
+        }
+        depthContinuation = continuation
+        return stream
+    }
+
+    private func endDepth() async {
+        depthContinuation = nil
+        _ = try? await connection.write(codec.encode(.setTouchMode(.off)))
+    }
+
+    /// Ensures the toy is one software can actually stop, returning whether it had
+    /// to intervene.
+    ///
+    /// In `TouchMode:5` the firmware drives the motor from its own sensor: it
+    /// ignores `Vibrate:0;` while answering `OK;` to it, and it keeps running after
+    /// the central has ceased to exist. Every stop in this library — `ControlLoop`'s
+    /// unconditional hard stop included — reduces to that command, so against a
+    /// toy in mode 5 none of them work. `DeviceCore` never sends mode 5, but the
+    /// mode survives a disconnect and another application may have left it set, so
+    /// it has to be read back and cleared before any control claim is honest.
+    ///
+    /// A toy without `TouchMode` at all answers `unkown` or stays silent; both mean
+    /// there is nothing to clear.
+    @discardableResult
+    public func ensureStoppable(timeout: Duration = .seconds(2)) async throws -> Bool {
+        try await connection.write(codec.encode(.touchMode))
+        let reply = try? await awaitReply(timeout: timeout) {
+            switch $0 { case .touchMode, .unsupported: true; default: false }
+        }
+        guard case let .touchMode(raw) = reply, TouchMode(rawValue: raw) == nil else { return false }
+        try await connection.write(codec.encode(.setTouchMode(.off)))
+        return true
+    }
+
     // MARK: Control
 
     /// Sets the `ordinal`-th vibrator (0-based) to `level` in 0…1. On a single-
@@ -97,6 +170,8 @@ public actor DeviceSession {
     public func disconnect() async {
         reader?.cancel()
         reader = nil
+        depthContinuation?.finish()
+        depthContinuation = nil
         failWaiter(CancellationError())
         await connection.disconnect()
     }
@@ -128,8 +203,14 @@ public actor DeviceSession {
         }
     }
 
-    private func deliver(_ frame: String) {
+    private func deliver(_ frame: Data) {
         let reply = codec.parse(frame)
+        // Sensor frames are fanned out, never used to satisfy a query: a `battery`
+        // must not be answered by the stream running underneath it.
+        if case let .depth(touch) = reply {
+            depthContinuation?.yield(touch)
+            return
+        }
         guard let waiter, waiter.match(reply) else { return }
         self.waiter = nil
         waiter.continuation.resume(returning: reply)

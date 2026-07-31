@@ -50,6 +50,67 @@ import Foundation
         }
     }
 
+    // MARK: Sensor input
+
+    @Test func depthEnablesTheStreamAndYieldsFrames() async throws {
+        let (session, connection) = try await identifiedSession()
+        let stream = try await session.depth()
+        // Unconditionally on every connection: `TouchMode` resets to 0 across a
+        // power cycle, so there is never a previous enable to inherit.
+        #expect(connection.commands.last == "TouchMode:3;")
+
+        connection.push(Data(hex: "aa70000b02142d14321432143214325f"))
+        var iterator = stream.makeAsyncIterator()
+        let frame = await iterator.next()
+        #expect(frame?.positions == [45, 50, 50, 50, 50])
+        #expect(frame?.velocity == 20)
+    }
+
+    /// A sensor frame must not answer a query running underneath it.
+    @Test func aSensorFrameDoesNotSatisfyAQuery() async throws {
+        let (session, connection) = try await identifiedSession()
+        _ = try await session.depth()
+        connection.push(Data(hex: "aa70000b02142d14321432143214325f"))
+        #expect(try await session.battery() == 78)
+    }
+
+    @Test func endingTheDepthStreamDisablesIt() async throws {
+        let (session, connection) = try await identifiedSession()
+        do { _ = try await session.depth() }
+        // The stream is deallocated here; termination is asynchronous.
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(connection.commands.last == "TouchMode:0;")
+    }
+
+    /// In `TouchMode:5` the firmware drives the motor itself and ignores every stop
+    /// this library can send, so a session that means to claim it can stop the toy
+    /// has to read the mode back and clear it.
+    @Test func ensureStoppableClearsFirmwareDrive() async throws {
+        let (session, connection) = try await identifiedSession()
+        connection.setReportedTouchMode(5)
+        #expect(try await session.ensureStoppable() == true)
+        #expect(connection.commands.suffix(2) == ["TouchMode;", "TouchMode:0;"])
+    }
+
+    @Test func ensureStoppableLeavesASafeModeAlone() async throws {
+        let (session, connection) = try await identifiedSession()
+        for mode in [0, 3] {
+            connection.setReportedTouchMode(mode)
+            #expect(try await session.ensureStoppable() == false)
+            #expect(connection.commands.last == "TouchMode;")
+        }
+    }
+
+    /// Most toys have no `TouchMode` at all: Edge 2 and Solace Pro answer with
+    /// silence, Gemini and Ferri with `unkown`. Both mean there is nothing to clear.
+    @Test func ensureStoppableToleratesToysWithoutTouchMode() async throws {
+        let connection = FakeConnection()
+        let session = DeviceSession(connection: connection, catalog: catalog)
+        try await session.identify()
+        connection.setReportedTouchMode(nil)
+        #expect(try await session.ensureStoppable(timeout: .milliseconds(50)) == false)
+    }
+
     @Test func reportsWhetherTheWriteReachedTheLink() async throws {
         let (session, connection) = try await identifiedSession()
         connection.setBusy(true)
