@@ -122,6 +122,12 @@ public actor DeviceSession {
     ///
     /// A toy without `TouchMode` at all answers `unkown` or stays silent; both mean
     /// there is nothing to clear.
+    ///
+    /// **Nothing calls this yet, on purpose.** Mode 5 is the one such state observed,
+    /// not the only one that exists — Lovense's own app has a setting that keeps a
+    /// toy running when Bluetooth drops, and no command for it is known. A caller
+    /// treating `false` as "this toy is stoppable" would be asserting more than the
+    /// check supports. See ROADMAP.md, "Stop authority as a whole".
     @discardableResult
     public func ensureStoppable(timeout: Duration = .seconds(2)) async throws -> Bool {
         try await connection.write(codec.encode(.touchMode))
