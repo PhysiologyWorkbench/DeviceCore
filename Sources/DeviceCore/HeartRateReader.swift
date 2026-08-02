@@ -4,12 +4,13 @@ import CoreBluetooth
 /// A thin reader over a notify-only `DeviceConnection`: maps each inbound
 /// `0x2A37` chunk through `HeartRateCodec` into an `AsyncStream<HeartRate>`. The
 /// input-side counterpart to `LovenseSession`, but far lighter — no identify, no
-/// request/response, pure stream. An `actor` so it owns its reader `Task` safely.
+/// request/response, pure stream. It is the degenerate `DeviceSession` caller: one
+/// source, one standing subscription, no request ever.
 public actor HeartRateReader {
     public let id: PeripheralID
 
     private let connection: DeviceConnection
-    private var reader: Task<Void, Never>?
+    private let session = DeviceSession()
 
     public init(connection: DeviceConnection) {
         self.id = connection.id
@@ -18,39 +19,25 @@ public actor HeartRateReader {
 
     /// Live heart-rate readings, one per notification. The stream ends when the
     /// connection drops.
-    public func readings() -> AsyncStream<HeartRate> {
-        let (stream, continuation) = AsyncStream.makeStream(of: HeartRate.self)
-        reader = Task { [connection] in
-            for await chunk in connection.inbound {
-                if let hr = HeartRateCodec.parse(chunk) {
-                    continuation.yield(hr)
-                }
-            }
-            continuation.finish()
-        }
-        return stream
+    public func readings() async -> AsyncStream<HeartRate> {
+        await readings(from: connection.inbound)
     }
 
     /// Like `readings()`, but over a second notify subscription rather than the
     /// connection's bound rx — for a connection whose resolver binds other
     /// endpoints (e.g. the PMD control point + data), with HR taken alongside.
     public func readings(subscribing characteristic: sending CBUUID) async throws -> AsyncStream<HeartRate> {
-        let chunks = try await connection.subscribe(characteristic)
-        let (stream, continuation) = AsyncStream.makeStream(of: HeartRate.self)
-        reader = Task {
-            for await chunk in chunks {
-                if let hr = HeartRateCodec.parse(chunk) {
-                    continuation.yield(hr)
-                }
-            }
-            continuation.finish()
-        }
-        return stream
+        await readings(from: try await connection.subscribe(characteristic))
     }
 
     public func disconnect() async {
-        reader?.cancel()
-        reader = nil
+        await session.stop()
         await connection.disconnect()
+    }
+
+    private func readings(from source: AsyncStream<Data>) async -> AsyncStream<HeartRate> {
+        await session.consume(source)
+        let (_, stream) = await session.subscribe(HeartRateCodec.parse)
+        return stream
     }
 }
