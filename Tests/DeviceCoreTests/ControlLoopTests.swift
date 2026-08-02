@@ -13,7 +13,7 @@ import Foundation
                                                             inputTimeout: .seconds(5)))
         async throws -> (ControlLoop, FakeConnection) {
         let connection = FakeConnection()
-        let session = DeviceSession(connection: connection, catalog: catalog)
+        let session = LovenseSession(connection: connection, catalog: catalog)
         try await session.identify()
         return (ControlLoop(session: session, limits: limits), connection)
     }

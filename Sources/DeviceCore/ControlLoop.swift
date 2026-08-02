@@ -33,7 +33,7 @@ public struct ControlStatus: Sendable, Equatable {
 /// Drives one vibrator (ordinal 0). Multi-feature actuation is a later concern;
 /// the second case will say what shape it needs.
 public actor ControlLoop {
-    private let session: DeviceSession
+    private let session: LovenseSession
     private let tick: Duration
     private var limits: SafetyLimits
     private let statusContinuation: AsyncStream<ControlStatus>.Continuation
@@ -68,7 +68,7 @@ public actor ControlLoop {
     /// Why the loop stopped, or nil while it is free to run.
     public var stopReason: StopReason? { stopped }
 
-    public init(session: DeviceSession,
+    public init(session: LovenseSession,
                 limits: SafetyLimits = SafetyLimits(),
                 tick: Duration = .milliseconds(50)) {
         self.session = session

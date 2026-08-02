@@ -1,7 +1,7 @@
 import Foundation
 
-// The vendor seam (ARCHITECTURE principle 4): `DeviceSession` speaks only this
-// neutral vocabulary and the `Codec` protocol, never a specific vendor. A second
+// The vendor seam (ARCHITECTURE principle 4): a session speaks only this
+// vocabulary and the `Codec` protocol, never a specific vendor. A second
 // vendor is another `Codec` conformance; nothing else changes.
 //
 // Framing is byte-level, not `String`-level. Two of the replies this seam has to
@@ -10,7 +10,7 @@ import Foundation
 // exactly the messages that matter. See MISSION2-INPUT.md §9.
 
 /// A command to a toy, in the toy's own raw value range (scaling from 0…1 to the
-/// feature range happens in `DeviceSession`, which owns the ranges). Cases mirror
+/// feature range happens in `LovenseSession`, which owns the ranges). Cases mirror
 /// the `Feature` kinds plus the query commands.
 public enum DeviceCommand: Equatable, Sendable {
     /// `actuator` is the 1-based wire slot for a multi-actuator toy, or `nil` for

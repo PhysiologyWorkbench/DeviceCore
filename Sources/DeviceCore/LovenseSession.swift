@@ -1,15 +1,14 @@
 import Foundation
 
-/// One connected toy. Owns its identity + features and serialises all traffic:
-/// being an `actor`, calls queue and at most one write is ever in flight, so a
-/// fast sensor cannot build a command backlog. Vendor-neutral — it speaks to a
-/// `Codec` and a `DeviceCatalog`, not to Lovense directly.
+/// One connected Lovense toy. Owns its identity + features and serialises all
+/// traffic: being an `actor`, calls queue and at most one write is ever in flight,
+/// so a fast sensor cannot build a command backlog.
 ///
 /// Queries (`identify`, `battery`) are request/response: one is outstanding at a
 /// time. Control setters (`setVibration`, …) write and report whether the bytes
 /// reached the link — under `.drop` they may not have, and a coalescing sender
 /// must not mistake a dropped write for the device's current state.
-public actor DeviceSession {
+public actor LovenseSession {
     public let id: PeripheralID
     /// The resolved model, available after `identify`.
     public private(set) var model: DeviceCatalog.Model?

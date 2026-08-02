@@ -2,12 +2,12 @@ import Testing
 import Foundation
 @testable import DeviceCore
 
-@Suite struct DeviceSessionTests {
+@Suite struct LovenseSessionTests {
     let catalog = try! DeviceCatalog()
 
-    private func identifiedSession() async throws -> (DeviceSession, FakeConnection) {
+    private func identifiedSession() async throws -> (LovenseSession, FakeConnection) {
         let connection = FakeConnection()
-        let session = DeviceSession(connection: connection, catalog: catalog)
+        let session = LovenseSession(connection: connection, catalog: catalog)
         try await session.identify()
         return (session, connection)
     }
@@ -44,7 +44,7 @@ import Foundation
     }
 
     @Test func refusesControlBeforeIdentify() async throws {
-        let session = DeviceSession(connection: FakeConnection(), catalog: catalog)
+        let session = LovenseSession(connection: FakeConnection(), catalog: catalog)
         await #expect(throws: SessionError.notIdentified) {
             try await session.setVibration(0, 0.5)
         }
@@ -105,7 +105,7 @@ import Foundation
     /// silence, Gemini and Ferri with `unkown`. Both mean there is nothing to clear.
     @Test func ensureStoppableToleratesToysWithoutTouchMode() async throws {
         let connection = FakeConnection()
-        let session = DeviceSession(connection: connection, catalog: catalog)
+        let session = LovenseSession(connection: connection, catalog: catalog)
         try await session.identify()
         connection.setReportedTouchMode(nil)
         #expect(try await session.ensureStoppable(timeout: .milliseconds(50)) == false)
