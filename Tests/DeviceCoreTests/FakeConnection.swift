@@ -8,10 +8,12 @@ import CoreBluetooth
 /// actor, because `DeviceConnection`'s properties are nonisolated requirements.
 final class FakeConnection: DeviceConnection, @unchecked Sendable {
     struct Write {
-        let text: String
+        let bytes: Data
         let ifBusy: BusyPolicy
         let type: WriteType
 
+        /// The command as text. Lossy for a binary protocol — assert on `bytes` there.
+        var text: String { String(decoding: bytes, as: UTF8.self) }
         var isDrop: Bool { if case .drop = ifBusy { true } else { false } }
     }
 
@@ -128,7 +130,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
         let dropped: Bool = try lock.withLock {
             guard connected else { throw TransportError.notConnected }
             guard linkBusy, case .drop = ifBusy else {
-                storedWrites.append(Write(text: text, ifBusy: ifBusy, type: type))
+                storedWrites.append(Write(bytes: bytes, ifBusy: ifBusy, type: type))
                 return false
             }
             return true

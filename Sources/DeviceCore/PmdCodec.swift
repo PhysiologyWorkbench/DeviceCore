@@ -67,7 +67,7 @@ public struct PmdAccFrame: Sendable, Equatable {
 
 /// Decodes the PMD binary protocol: control-point command framing and responses,
 /// the settings TLV, and the ECG/ACC data frames. Stateless and hardware-free —
-/// this is the unit-test surface; the streaming path lives in `PmdReader`.
+/// this is the unit-test surface; the streaming path lives in `PolarPmdSession`.
 ///
 /// Ported from `polar-ble-sdk` (`BlePmdClient.swift`, `EcgData.swift`, `AccData.swift`,
 /// `PmdSetting.swift`, `PmdControlPointResponse.swift`) under `/Users/pnr/Development/Polar`.

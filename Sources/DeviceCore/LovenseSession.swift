@@ -104,7 +104,7 @@ public actor LovenseSession {
         // underneath it.
         let (subscription, stream) = await session.subscribe(
             { if case let .depth(frame) = codec.parse($0) { frame } else { nil } },
-            onTermination: { [weak self] in Task { await self?.depthEnded(generation) } })
+            onTermination: { [weak self] in await self?.depthEnded(generation) })
         depthSubscription = subscription
         return stream
     }

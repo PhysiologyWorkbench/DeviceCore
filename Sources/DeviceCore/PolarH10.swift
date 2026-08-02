@@ -30,9 +30,9 @@ public enum PolarH10 {
 
     /// Polar Measurement Data — the high-rate ECG/ACC streams. Unlike the notify-only
     /// HR path this needs a control-point handshake and a binary multi-frame decode
-    /// (`PmdCodec`, `PmdReader`). The service is not advertised, so `scanFilter`
+    /// (`PmdCodec`, `PolarPmdSession`). The service is not advertised, so `scanFilter`
     /// still finds the strap by name; the connection binds the control point as `tx`
-    /// and the data characteristic as `rx`, and `PmdReader` subscribes the control
+    /// and the data characteristic as `rx`, and `PolarPmdSession` subscribes the control
     /// point separately for command responses.
     public static var pmdService: CBUUID { CBUUID(string: "FB005C80-02E7-F387-1CAD-8ACD2D8DF0C8") }
     public static var pmdControlPoint: CBUUID { CBUUID(string: "FB005C81-02E7-F387-1CAD-8ACD2D8DF0C8") }

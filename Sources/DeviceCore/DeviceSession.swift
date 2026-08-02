@@ -118,9 +118,10 @@ public actor DeviceSession {
     /// A standing stream of every frame `select` accepts, for as long as the
     /// session lives. `onTermination` runs when the consumer drops the stream or
     /// `cancel` ends it — the hook a caller needs to switch the device's own stream
-    /// off again.
+    /// off again. It is async and runs on the session's own task, so a caller need
+    /// not spawn one to get back into its actor.
     public func subscribe<T: Sendable>(_ select: @escaping @Sendable (Data) -> T?,
-                                       onTermination: (@Sendable () -> Void)? = nil)
+                                       onTermination: (@Sendable () async -> Void)? = nil)
         -> (Subscription, AsyncStream<T>) {
         let subscription = Subscription()
         let (stream, continuation) = AsyncStream.makeStream(of: T.self)
@@ -129,8 +130,10 @@ public actor DeviceSession {
             return (subscription, stream)
         }
         continuation.onTermination = { [weak self] _ in
-            Task { await self?.remove(subscription) }
-            onTermination?()
+            Task {
+                await self?.remove(subscription)
+                await onTermination?()
+            }
         }
         standing.append(Standing(subscription: subscription,
                                  deliver: { frame in
