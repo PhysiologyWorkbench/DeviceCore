@@ -1,11 +1,12 @@
 import Foundation
 import CoreBluetooth
 
-// Core vocabulary shared across the package: the value types describing devices
+// Core vocabulary shared across the library: the value types describing devices
 // and connections, and the `Transport`/`DeviceConnection` protocols that the BLE
-// layer implements and the (future) session layer consumes. This is the package's
-// abstract API surface — not a "model" in the MVC sense; there is no view here.
-// Concrete BLE lives in `BleTransport.swift`; device data in `DeviceCatalog.swift`.
+// layer implements and the session layer consumes. This is the library's abstract
+// API surface — not a "model" in the MVC sense; there is no view here. Concrete
+// BLE lives in `BleTransport.swift`; a device's catalogue, if it has one, lives in
+// its vendor kit.
 
 /// Stable, host-scoped identity of a peripheral (`CBPeripheral.identifier`).
 public struct PeripheralID: Hashable, Sendable {
@@ -21,8 +22,8 @@ public struct Discovery: @unchecked Sendable {
 }
 
 /// What a scan matches on: an advertised name prefix **or** an advertised service
-/// UUID (either is sufficient). Device-neutral — the Lovense catalog and the HR
-/// profile each supply their own.
+/// UUID (either is sufficient). Device-neutral — a vendor kit's catalogue and the
+/// standard HR profile each supply their own.
 public struct ScanFilter: @unchecked Sendable {
     public let namePrefixes: [String]
     public let serviceUUIDs: [CBUUID]
@@ -34,7 +35,7 @@ public struct ScanFilter: @unchecked Sendable {
 
 /// Picks the endpoints to bind on a connection, from one discovered service's
 /// characteristics. This is the input/output seam (extends ARCHITECTURE principle
-/// 4 to input): a serial toy resolves a writable tx + notify rx; a notify-only
+/// 5 to input): a serial toy resolves a writable tx + notify rx; a notify-only
 /// sensor resolves rx alone.
 public protocol EndpointResolver: Sendable {
     /// Given one discovered service's characteristics, return the endpoints to
@@ -100,8 +101,8 @@ public enum BusyPolicy: Sendable {
 
 /// Which GATT write to use when the tx characteristic advertises both. The
 /// default keeps the low-latency unacknowledged path every shipping caller wants;
-/// `.withResponse` exists because some vendors' own apps use Write Request (the
-/// Lovense app does), and comparing the two is a measurement worth making.
+/// `.withResponse` exists because some vendors' own apps use Write Request, and
+/// comparing the two is a measurement worth making.
 public enum WriteType: Sendable {
     case preferWithoutResponse
     case withResponse
@@ -134,7 +135,7 @@ extension TransportError: LocalizedError {
     }
 }
 
-/// The BLE side. Knows nothing about the Lovense protocol — it moves bytes.
+/// The BLE side. Knows no vendor's protocol — it moves bytes.
 public protocol Transport: Sendable {
     /// Resolves when Bluetooth is powered on; throws `bluetoothUnavailable` otherwise.
     func waitUntilPoweredOn() async throws
@@ -146,8 +147,8 @@ public protocol Transport: Sendable {
     func connect(_ id: PeripheralID, timeout: Duration) async throws -> DeviceConnection
 }
 
-/// A ready connection to one device. Delivers raw notification chunks; framing of
-/// `;`-terminated Lovense messages belongs to the codec layer, not here.
+/// A ready connection to one device. Delivers raw notification chunks; splitting a
+/// chunk into a vendor's messages belongs to that vendor's codec, not here.
 public protocol DeviceConnection: Sendable {
     var id: PeripheralID { get }
     var inbound: AsyncStream<Data> { get }

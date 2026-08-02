@@ -59,7 +59,7 @@ public actor DeviceSession {
     ///
     /// `framing` splits one notification into messages. The default is identity —
     /// one notification, one message — which is what every binary profile here
-    /// wants; Lovense passes its `;` framer.
+    /// wants; a serial protocol passes its own terminator-splitting framer.
     public func consume(_ source: AsyncStream<Data>,
                         framing: @escaping @Sendable (Data) -> [Data] = { [$0] }) {
         attachedSources += 1

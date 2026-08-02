@@ -3,9 +3,9 @@ import CoreBluetooth
 
 /// A thin reader over a notify-only `DeviceConnection`: maps each inbound
 /// `0x2A37` chunk through `HeartRateCodec` into an `AsyncStream<HeartRate>`. The
-/// input-side counterpart to `LovenseSession`, but far lighter — no identify, no
-/// request/response, pure stream. It is the degenerate `DeviceSession` caller: one
-/// source, one standing subscription, no request ever.
+/// input-side counterpart to a vendor kit's session, but far lighter — no
+/// identify, no request/response, pure stream. It is the degenerate
+/// `DeviceSession` caller: one source, one standing subscription, no request ever.
 public actor HeartRateReader {
     public let id: PeripheralID
 
