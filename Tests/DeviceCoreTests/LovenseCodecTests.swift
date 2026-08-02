@@ -161,15 +161,15 @@ import Foundation
 
     // MARK: Framing
 
-    @Test func splitsAsciiRepliesOnTheTerminator() async {
-        let out = await frames(["Vibrate:5;Battery;"])
+    @Test func splitsAsciiRepliesOnTheTerminator() {
+        let out = frames(["Vibrate:5;Battery;"])
         #expect(out.map(text) == ["Vibrate:5", "Battery"])
     }
 
     /// `GetCap;`'s tagged reply carries two terminators. The empty message between
     /// them is not a reply.
-    @Test func doubledTerminatorYieldsOneMessage() async {
-        let out = await frames(["CAP:v,1;;"])
+    @Test func doubledTerminatorYieldsOneMessage() {
+        let out = frames(["CAP:v,1;;"])
         #expect(out.map(text) == ["CAP:v,1"])
     }
 
@@ -177,17 +177,17 @@ import Foundation
     /// 2026-07-30: `unkown,80` arrived without its `;` and the following reply
     /// landed on top of it. Accumulating until `;` glues them; treating a
     /// notification as a message boundary does not.
-    @Test func anUnterminatedReplyIsNotGluedToTheNext() async {
-        let out = await frames(["unkown,80", "TV:40,80,100;"])
+    @Test func anUnterminatedReplyIsNotGluedToTheNext() {
+        let out = frames(["unkown,80", "TV:40,80,100;"])
         #expect(out.map(text) == ["unkown,80", "TV:40,80,100"])
         #expect(codec.parse(out[0]) == .unsupported)
     }
 
     /// A UTF-8 decode in the framer would destroy the sensor frame, which is the
     /// whole reason the seam moved to `Data`.
-    @Test func aBinaryFrameSurvivesBetweenTwoReplies() async {
+    @Test func aBinaryFrameSurvivesBetweenTwoReplies() {
         let frame = Data(hex: "aa70000b02142d14321432143214325f")
-        let out = await frames([Data("OK;".utf8), frame, Data("OK;".utf8)])
+        let out = frames([Data("OK;".utf8), frame, Data("OK;".utf8)])
         #expect(out.count == 3)
         #expect(out[1] == frame)
         if case .depth = codec.parse(out[1]) {} else { Issue.record("frame not decoded") }
@@ -197,18 +197,12 @@ import Foundation
 
     private func text(_ d: Data) -> String { String(decoding: d, as: UTF8.self) }
 
-    private func frames(_ chunks: [String]) async -> [Data] {
-        await frames(chunks.map { Data($0.utf8) })
+    private func frames(_ chunks: [String]) -> [Data] {
+        frames(chunks.map { Data($0.utf8) })
     }
 
-    private func frames(_ chunks: [Data]) async -> [Data] {
-        let source = AsyncStream<Data> { c in
-            chunks.forEach { c.yield($0) }
-            c.finish()
-        }
-        var out: [Data] = []
-        for await f in codec.frames(from: source) { out.append(f) }
-        return out
+    private func frames(_ chunks: [Data]) -> [Data] {
+        chunks.flatMap { codec.frame($0) }
     }
 
     /// Captured Mission 2 sensor frames, from `captures/lvs-c15/probe/`.

@@ -17,10 +17,11 @@ public actor LovenseSession {
     private let catalog: DeviceCatalog
     private let codec: any Codec
 
-    private var reader: Task<Void, Never>?
-    private var waiter: (match: @Sendable (DeviceReply) -> Bool,
-                         continuation: CheckedContinuation<DeviceReply, Error>)?
-    private var depthContinuation: AsyncStream<TouchFrame>.Continuation?
+    /// The shared correlator. Everything below is Lovense on top of it.
+    private let session = DeviceSession()
+    private var consuming = false
+    private var depthSubscription: DeviceSession.Subscription?
+    private var depthGeneration = 0
 
     public init(connection: DeviceConnection,
                 catalog: DeviceCatalog,
@@ -90,21 +91,35 @@ public actor LovenseSession {
     /// The frame rate is bound by the 30 ms connection interval rather than by the
     /// sensor, and writing at up to 33 Hz costs it nothing.
     public func depth() async throws -> AsyncStream<TouchFrame> {
-        ensureReading()
+        await endDepth()
+        await ensureConsuming()
         // Unconditionally, every connection: `TouchMode` resets to 0 across a power
         // cycle, so there is never a previous session's enable to inherit.
         try await connection.write(codec.encode(.setTouchMode(.stream)))
-        depthContinuation?.finish()
-        let (stream, continuation) = AsyncStream.makeStream(of: TouchFrame.self)
-        continuation.onTermination = { [weak self] _ in
-            Task { await self?.endDepth() }
-        }
-        depthContinuation = continuation
+        depthGeneration += 1
+        let generation = depthGeneration
+        let codec = self.codec
+        // A standing subscription, so a sensor frame is consumed before any query
+        // sees it — the reason `battery` cannot be answered by the stream running
+        // underneath it.
+        let (subscription, stream) = await session.subscribe(
+            { if case let .depth(frame) = codec.parse($0) { frame } else { nil } },
+            onTermination: { [weak self] in Task { await self?.depthEnded(generation) } })
+        depthSubscription = subscription
         return stream
     }
 
+    /// A superseded stream terminates too, and must not switch off the one that
+    /// replaced it.
+    private func depthEnded(_ generation: Int) async {
+        guard generation == depthGeneration else { return }
+        await endDepth()
+    }
+
     private func endDepth() async {
-        depthContinuation = nil
+        guard let subscription = depthSubscription else { return }
+        depthSubscription = nil
+        await session.cancel(subscription)
         _ = try? await connection.write(codec.encode(.setTouchMode(.off)))
     }
 
@@ -173,11 +188,8 @@ public actor LovenseSession {
     }
 
     public func disconnect() async {
-        reader?.cancel()
-        reader = nil
-        depthContinuation?.finish()
-        depthContinuation = nil
-        failWaiter(CancellationError())
+        depthSubscription = nil
+        await session.stop()
         await connection.disconnect()
     }
 
@@ -185,46 +197,21 @@ public actor LovenseSession {
 
     private func awaitReply(timeout: Duration,
                             matching match: @escaping @Sendable (DeviceReply) -> Bool) async throws -> DeviceReply {
-        ensureReading()
-        // `try`, not `try?`: a cancelled sleep must end the task, not fall through
-        // to fail whichever waiter is registered by then — which, once this query
-        // has been answered and the `defer` has cancelled, is the *next* query's.
-        let timeoutTask = Task { [weak self] in
-            try await Task.sleep(for: timeout)
-            await self?.failWaiter(TransportError.connectTimeout)
-        }
-        defer { timeoutTask.cancel() }
-        return try await withCheckedThrowingContinuation { continuation in
-            waiter?.continuation.resume(throwing: CancellationError())   // supersede any prior query
-            waiter = (match, continuation)
+        await ensureConsuming()
+        let codec = self.codec
+        return try await session.request(timeout: timeout) { frame in
+            let reply = codec.parse(frame)
+            return match(reply) ? reply : nil
         }
     }
 
-    private func ensureReading() {
-        guard reader == nil else { return }
-        let frames = codec.frames(from: connection.inbound)
-        reader = Task { [weak self] in
-            for await frame in frames { await self?.deliver(frame) }
-        }
-    }
-
-    private func deliver(_ frame: Data) {
-        let reply = codec.parse(frame)
-        // Sensor frames are fanned out, never used to satisfy a query: a `battery`
-        // must not be answered by the stream running underneath it.
-        if case let .depth(touch) = reply {
-            depthContinuation?.yield(touch)
-            return
-        }
-        guard let waiter, waiter.match(reply) else { return }
-        self.waiter = nil
-        waiter.continuation.resume(returning: reply)
-    }
-
-    private func failWaiter(_ error: Error) {
-        guard let waiter else { return }
-        self.waiter = nil
-        waiter.continuation.resume(throwing: error)
+    private func ensureConsuming() async {
+        guard !consuming else { return }
+        consuming = true
+        let codec = self.codec
+        // One rx characteristic carries replies and sensor frames alike, so the
+        // separation is the session's to make, not the wire's.
+        await session.consume(connection.inbound, framing: { codec.frame($0) })
     }
 
     // MARK: Feature lookup / scaling

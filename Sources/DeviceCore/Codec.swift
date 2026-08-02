@@ -128,34 +128,23 @@ public protocol Codec: Sendable {
 }
 
 public extension Codec {
-    /// Splits raw notification chunks into messages. Shared across vendors.
+    /// Splits one raw notification into messages. Shared across vendors, and the
+    /// framer a `DeviceSession` is given.
     ///
     /// **One notification is one message boundary**, so nothing is accumulated
-    /// across chunks. BLE preserves notification boundaries and the negotiated MTU
-    /// is 247 against replies of a few bytes, so a split reply is not a case that
+    /// across chunks — which is why this is a function of one chunk and holds no
+    /// state. BLE preserves notification boundaries and the negotiated MTU is 247
+    /// against replies of a few bytes, so a split reply is not a case that
     /// arises — whereas gluing two replies together is a case that *has* arisen: a
     /// `unkown,80` was once seen with no terminator, and an accumulate-until-`;`
     /// framer silently welds it to whatever comes next. A trailing piece with no
-    /// terminator is therefore yielded as its own message rather than held.
+    /// terminator is therefore its own message rather than held.
     ///
     /// A chunk that is not entirely printable ASCII is a binary frame and passes
     /// through whole and undecoded.
-    func frames(from stream: AsyncStream<Data>) -> AsyncStream<Data> {
-        let terminator = self.terminator
-        return AsyncStream { continuation in
-            Task {
-                for await chunk in stream where !chunk.isEmpty {
-                    guard chunk.allSatisfy(Self.isTextByte) else {
-                        continuation.yield(chunk)
-                        continue
-                    }
-                    for piece in chunk.split(separator: terminator) {
-                        continuation.yield(Data(piece))
-                    }
-                }
-                continuation.finish()
-            }
-        }
+    func frame(_ chunk: Data) -> [Data] {
+        guard chunk.allSatisfy(Self.isTextByte) else { return [chunk] }
+        return chunk.split(separator: terminator).map { Data($0) }
     }
 
     /// Printable ASCII, plus the whitespace a reply might legitimately carry.
