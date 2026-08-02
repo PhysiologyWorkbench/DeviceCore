@@ -1,5 +1,21 @@
 import Foundation
 
+/// What `ControlLoop` needs of a device, and the whole of it: set one vibrator to
+/// a level in 0…1, and say whether the bytes reached the link. A vendor kit
+/// conforms its session; `DeviceCore` never learns the wire protocol behind it.
+///
+/// **The stop authority of everything above reaches exactly as far as this one
+/// method does.** Every stop here — the fade, the watchdog, the hard stop — is a
+/// zero through `setVibration`, so a device whose firmware drives its own motor
+/// from its own sensor cannot be stopped by this library at all, however the loop
+/// behaves. That such a mode exists is not hypothetical, and guarding against it
+/// is the vendor kit's business: the kit's documentation says which modes its
+/// devices have and what a caller must do about them.
+public protocol Actuator: Sendable {
+    @discardableResult
+    func setVibration(_ ordinal: Int, _ level: Double, ifBusy: BusyPolicy) async throws -> Bool
+}
+
 /// Why the loop stopped. The loop itself can only ever originate `.sensorLost`
 /// (its watchdog) and `.actuatorLost` (a failed write); the rest are handed to it.
 public enum StopReason: Sendable, Equatable {
@@ -33,7 +49,7 @@ public struct ControlStatus: Sendable, Equatable {
 /// Drives one vibrator (ordinal 0). Multi-feature actuation is a later concern;
 /// the second case will say what shape it needs.
 public actor ControlLoop {
-    private let session: LovenseSession
+    private let actuator: any Actuator
     private let tick: Duration
     private var limits: SafetyLimits
     private let statusContinuation: AsyncStream<ControlStatus>.Continuation
@@ -68,10 +84,10 @@ public actor ControlLoop {
     /// Why the loop stopped, or nil while it is free to run.
     public var stopReason: StopReason? { stopped }
 
-    public init(session: LovenseSession,
+    public init(actuator: any Actuator,
                 limits: SafetyLimits = SafetyLimits(),
                 tick: Duration = .milliseconds(50)) {
-        self.session = session
+        self.actuator = actuator
         self.limits = limits
         self.tick = tick
         var continuation: AsyncStream<ControlStatus>.Continuation!
@@ -143,7 +159,7 @@ public actor ControlLoop {
         target = 0
         if stopped == nil { stopped = reason }
         stopEpoch += 1
-        _ = try? await session.setVibration(0, 0, ifBusy: .wait)
+        _ = try? await actuator.setVibration(0, 0, ifBusy: .wait)
         level = 0
         lastSent = 0
         publish()
@@ -186,7 +202,7 @@ public actor ControlLoop {
         let policy: BusyPolicy = next == 0 ? .wait : .drop
         let epoch = stopEpoch
         do {
-            guard try await session.setVibration(0, next, ifBusy: policy) else { return }
+            guard try await actuator.setVibration(0, next, ifBusy: policy) else { return }
         } catch {
             // The write failed, so the link is gone. Nothing can be commanded and
             // nothing should be assumed about the device's state.

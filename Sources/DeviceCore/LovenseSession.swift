@@ -232,6 +232,10 @@ public actor LovenseSession {
     }
 }
 
+/// The one method `ControlLoop` drives a toy through. Everything else this session
+/// offers is above the safety envelope, not inside it.
+extension LovenseSession: Actuator {}
+
 public enum SessionError: Error, Equatable {
     /// A command needing the model was issued before `identify`.
     case notIdentified
