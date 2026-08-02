@@ -2,33 +2,19 @@ import Foundation
 import CoreBluetooth
 @testable import DeviceCore
 
-/// A `DeviceConnection` standing in for a radio: it records every write, answers
-/// the Lovense queries so `identify`/`battery` complete, and can be told to report
-/// the link as busy so the `.drop` path is exercisable. Locked rather than an
-/// actor, because `DeviceConnection`'s properties are nonisolated requirements.
+/// A `DeviceConnection` standing in for a radio, for the one thing DeviceCore's
+/// own tests still need a connection for: where a notify-only reader's frames come
+/// from, and what happens to its stream when the link goes away. The richer
+/// siblings in `LovenseKitTests` and `PolarKitTests` answer their vendors' wire
+/// protocols; none of that may live here. Locked rather than an actor, because
+/// `DeviceConnection`'s properties are nonisolated requirements.
 final class FakeConnection: DeviceConnection, @unchecked Sendable {
-    struct Write {
-        let bytes: Data
-        let ifBusy: BusyPolicy
-        let type: WriteType
-
-        /// The command as text. Lossy for a binary protocol — assert on `bytes` there.
-        var text: String { String(decoding: bytes, as: UTF8.self) }
-        var isDrop: Bool { if case .drop = ifBusy { true } else { false } }
-    }
-
     let id = PeripheralID(UUID())
     let inbound: AsyncStream<Data>
     let state: AsyncStream<ConnectionState>
 
     private let lock = NSLock()
-    private var storedWrites: [Write] = []
-    private var linkBusy = false
-    private var reportedTouchMode: Int? = 0
     private var connected = true
-    private var holdNext = false
-    private var heldWrite: CheckedContinuation<Void, Never>?
-    private var arrivalWaiter: CheckedContinuation<Void, Never>?
     private let inboundContinuation: AsyncStream<Data>.Continuation
     private let stateContinuation: AsyncStream<ConnectionState>.Continuation
     private var subscriptions: [CBUUID: AsyncStream<Data>.Continuation] = [:]
@@ -44,30 +30,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
 
     // MARK: Inspection
 
-    var writes: [Write] {
-        lock.withLock { storedWrites }
-    }
-
-    /// Just the command text, which is what most assertions care about.
-    var commands: [String] {
-        writes.map(\.text)
-    }
-
-    /// While busy, a `.drop` write is refused and a `.wait` write still succeeds —
-    /// the fake does not model the queue, only the outcome the caller sees.
-    func setBusy(_ busy: Bool) {
-        lock.withLock { linkBusy = busy }
-    }
-
-    /// What the toy reports for `TouchMode;`: 5 is the mode `ensureStoppable`
-    /// exists to catch, and `nil` is a toy that has no `TouchMode` and answers with
-    /// silence, as Edge 2 and Solace Pro do.
-    func setReportedTouchMode(_ raw: Int?) {
-        lock.withLock { reportedTouchMode = raw }
-    }
-
-    /// Pushes an unsolicited notification — a sensor frame, say, which no write
-    /// asks for.
+    /// Pushes a notification on the bound rx, which no write asks for.
     func push(_ bytes: Data) {
         inboundContinuation.yield(bytes)
     }
@@ -78,82 +41,15 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
         lock.withLock { subscriptions[characteristic] }?.yield(bytes)
     }
 
-    /// Ends one subscription's stream without dropping the connection.
-    func finishSubscription(_ characteristic: CBUUID) {
-        lock.withLock { subscriptions.removeValue(forKey: characteristic) }?.finish()
-    }
-
-    /// Suspends the next write until `releaseHeldWrite`, letting later writes
-    /// through — so a test can run other actor work while one write is in flight.
-    func holdNextWrite() {
-        lock.withLock { holdNext = true }
-    }
-
-    /// Resumes once a write is suspended at the hold.
-    func waitForHeldWrite() async {
-        await withCheckedContinuation { continuation in
-            let alreadyHeld: Bool = lock.withLock {
-                if heldWrite != nil { return true }
-                arrivalWaiter = continuation
-                return false
-            }
-            if alreadyHeld { continuation.resume() }
-        }
-    }
-
-    func releaseHeldWrite() {
-        let held = lock.withLock { () -> CheckedContinuation<Void, Never>? in
-            defer { heldWrite = nil }
-            return heldWrite
-        }
-        held?.resume()
-    }
-
     // MARK: DeviceConnection
 
+    /// Nothing here writes — a notify-only profile has no tx — so this only has to
+    /// tell the truth about a dropped link.
     func write(_ bytes: Data, ifBusy: BusyPolicy, type: WriteType) async throws -> Bool {
-        let hold = lock.withLock { () -> Bool in
-            defer { holdNext = false }
-            return holdNext
-        }
-        if hold {
-            await withCheckedContinuation { continuation in
-                let arrival = lock.withLock { () -> CheckedContinuation<Void, Never>? in
-                    heldWrite = continuation
-                    defer { arrivalWaiter = nil }
-                    return arrivalWaiter
-                }
-                arrival?.resume()
-            }
-        }
-        let text = String(decoding: bytes, as: UTF8.self)
-        let dropped: Bool = try lock.withLock {
+        try lock.withLock {
             guard connected else { throw TransportError.notConnected }
-            guard linkBusy, case .drop = ifBusy else {
-                storedWrites.append(Write(bytes: bytes, ifBusy: ifBusy, type: type))
-                return false
-            }
-            return true
-        }
-        if dropped { return false }
-        switch text {
-        case "DeviceType;": reply("P:243:0102030405;")
-        case "Battery;":    reply("78;")
-        case "TouchMode;":
-            if let mode = lock.withLock({ reportedTouchMode }) { reply("TouchMode:\(mode);") }
-        default:            break
         }
         return true
-    }
-
-    /// A reply is a later notification, never something that lands inside the
-    /// write call — a session registers its waiter after writing, so a
-    /// synchronous answer would arrive before anyone is listening.
-    private func reply(_ frame: String) {
-        Task {
-            try? await Task.sleep(for: .milliseconds(1))
-            inboundContinuation.yield(Data(frame.utf8))
-        }
     }
 
     func read(characteristic: CBUUID) async throws -> Data {
