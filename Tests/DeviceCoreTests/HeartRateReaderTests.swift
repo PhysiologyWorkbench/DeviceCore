@@ -9,6 +9,11 @@ import CoreBluetooth
     /// Flags 0x10 (RR present), the bpm, and one 1024-tick RR interval — one second.
     private func frame(bpm: UInt8) -> Data { Data([0x10, bpm, 0x00, 0x04]) }
 
+    /// The standard GATT Heart Rate Measurement characteristic. Computed, not
+    /// stored: `readings(subscribing:)` takes it as `sending`, so each use needs
+    /// its own instance.
+    private var heartRateMeasurement: CBUUID { CBUUID(string: "2A37") }
+
     @Test func readingsComeOffTheBoundRxCharacteristic() async throws {
         let connection = FakeConnection()
         let reader = HeartRateReader(connection: connection)
@@ -20,14 +25,15 @@ import CoreBluetooth
         #expect(reading?.rrIntervalsMs == [1000])
     }
 
-    /// HR riding a connection whose resolver bound the PMD endpoints instead: the
-    /// bound rx is then someone else's stream, and nothing on it may show up here.
+    /// HR riding a connection whose resolver bound a control-point pair instead:
+    /// the bound rx is then someone else's stream, and nothing on it may show up
+    /// here.
     @Test func readingsComeOffASubscribedCharacteristic() async throws {
         let connection = FakeConnection()
         let reader = HeartRateReader(connection: connection)
-        let stream = try await reader.readings(subscribing: PolarH10.heartRateMeasurement)
+        let stream = try await reader.readings(subscribing: heartRateMeasurement)
         connection.push(frame(bpm: 99))
-        connection.push(frame(bpm: 60), on: PolarH10.heartRateMeasurement)
+        connection.push(frame(bpm: 60), on: heartRateMeasurement)
         var readings = stream.makeAsyncIterator()
         #expect(await readings.next()?.bpm == 60)
     }
