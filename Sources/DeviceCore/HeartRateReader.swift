@@ -24,8 +24,8 @@ public actor HeartRateReader {
     }
 
     /// Like `readings()`, but over a second notify subscription rather than the
-    /// connection's bound rx — for a connection whose resolver binds other
-    /// endpoints (e.g. the PMD control point + data), with HR taken alongside.
+    /// connection's bound rx — for a connection whose resolver bound a
+    /// control-point pair for some other measurement, with HR taken alongside.
     public func readings(subscribing characteristic: sending CBUUID) async throws -> AsyncStream<HeartRate> {
         await readings(from: try await connection.subscribe(characteristic))
     }

@@ -4,8 +4,10 @@ import Foundation
 ///
 /// Two subsystems had independently grown this shape and disagreed about it — one
 /// with a timeout, one able to await a silent device for ever — so it is stated
-/// once here and used by `LovenseSession`, `PolarPmdSession` and `HeartRateReader`
-/// rather than reinvented per vendor. A third vendor adds a caller, not a copy.
+/// once here rather than reinvented per vendor. Its three callers are a serial
+/// toy's session, a high-rate sensor's whose replies and data arrive on separate
+/// characteristics, and a notify-only reader that has neither shape on its own.
+/// A further vendor adds a caller, not a copy.
 ///
 /// It owns no connection and no vendor vocabulary: byte sources go in through
 /// `consume`, and frames come out either to a **standing subscription** (a stream)
@@ -15,8 +17,8 @@ import Foundation
 /// accident.
 ///
 /// Sources are plural because the separation between replies and data may come
-/// from the wire (Polar's control point versus its data characteristic) or not at
-/// all (Lovense's single rx carries both); neither is assumed.
+/// from the wire (a control point distinct from its data characteristic) or not at
+/// all (one serial rx carrying both); neither is assumed.
 public actor DeviceSession {
     /// A handle to a standing subscription, for cancelling it before its consumer
     /// drops the stream.

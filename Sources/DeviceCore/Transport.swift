@@ -63,8 +63,8 @@ public struct NotifyEndpointResolver: EndpointResolver, @unchecked Sendable {
 }
 
 /// Binds an explicit writable `tx` and notify `rx` by UUID within one service —
-/// for devices with a known control-point + data-stream characteristic pair (e.g.
-/// Polar PMD), where neither the serial heuristic nor the notify-only resolver fits.
+/// for devices with a known control-point + data-stream characteristic pair, where
+/// neither the serial heuristic nor the notify-only resolver fits.
 public struct FixedEndpointResolver: EndpointResolver, @unchecked Sendable {
     let service: CBUUID
     let tx: CBUUID
@@ -166,9 +166,9 @@ public protocol DeviceConnection: Sendable {
     /// Enables notifications on an additional discovered characteristic and returns
     /// its own inbound stream, distinct from `inbound` (the resolver's rx). For
     /// devices whose control-point responses arrive on a second notify
-    /// characteristic (e.g. Polar PMD's control point). Resolves once the
-    /// subscription is confirmed, so a following command write cannot race ahead of
-    /// it. The stream ends when the connection drops.
+    /// characteristic. Resolves once the subscription is confirmed, so a following
+    /// command write cannot race ahead of it. The stream ends when the connection
+    /// drops.
     func subscribe(_ characteristic: CBUUID) async throws -> AsyncStream<Data>
     func disconnect() async
 }
