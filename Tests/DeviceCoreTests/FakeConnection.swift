@@ -29,6 +29,7 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     private var arrivalWaiter: CheckedContinuation<Void, Never>?
     private let inboundContinuation: AsyncStream<Data>.Continuation
     private let stateContinuation: AsyncStream<ConnectionState>.Continuation
+    private var subscriptions: [CBUUID: AsyncStream<Data>.Continuation] = [:]
 
     init() {
         var inboundCont: AsyncStream<Data>.Continuation!
@@ -67,6 +68,17 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
     /// asks for.
     func push(_ bytes: Data) {
         inboundContinuation.yield(bytes)
+    }
+
+    /// Pushes a notification on a subscribed characteristic. Dropped if nothing is
+    /// subscribed, as a real notification for an unsubscribed characteristic is.
+    func push(_ bytes: Data, on characteristic: CBUUID) {
+        lock.withLock { subscriptions[characteristic] }?.yield(bytes)
+    }
+
+    /// Ends one subscription's stream without dropping the connection.
+    func finishSubscription(_ characteristic: CBUUID) {
+        lock.withLock { subscriptions.removeValue(forKey: characteristic) }?.finish()
     }
 
     /// Suspends the next write until `releaseHeldWrite`, letting later writes
@@ -146,14 +158,26 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
         throw TransportError.characteristicNotFound("fake connection has no readable characteristics")
     }
 
+    /// A live channel, not an immediately-finished stream: a device that accepts a
+    /// subscription and then says nothing is the state a reader can hang in, and a
+    /// fake that finishes on the spot hides exactly that.
     func subscribe(_ characteristic: CBUUID) async throws -> AsyncStream<Data> {
-        AsyncStream { $0.finish() }
+        let (stream, continuation) = AsyncStream.makeStream(of: Data.self)
+        lock.withLock {
+            subscriptions.updateValue(continuation, forKey: characteristic)
+        }?.finish()
+        return stream
     }
 
     func disconnect() async {
-        lock.withLock { connected = false }
+        let channels: [AsyncStream<Data>.Continuation] = lock.withLock {
+            connected = false
+            defer { subscriptions = [:] }
+            return Array(subscriptions.values)
+        }
         stateContinuation.yield(.disconnected(reason: nil))
         inboundContinuation.finish()
+        for channel in channels { channel.finish() }
         stateContinuation.finish()
     }
 }
