@@ -9,10 +9,10 @@ import CoreBluetooth
     /// Flags 0x10 (RR present), the bpm, and one 1024-tick RR interval — one second.
     private func frame(bpm: UInt8) -> Data { Data([0x10, bpm, 0x00, 0x04]) }
 
-    /// The standard GATT Heart Rate Measurement characteristic. Computed, not
-    /// stored: `readings(subscribing:)` takes it as `sending`, so each use needs
-    /// its own instance.
-    private var heartRateMeasurement: CBUUID { CBUUID(string: "2A37") }
+    /// `HeartRateService.measurement` is computed, not stored, so each use gets
+    /// its own instance — which is what `readings(subscribing:)`'s `sending`
+    /// parameter needs.
+    private var heartRateMeasurement: CBUUID { HeartRateService.measurement }
 
     @Test func readingsComeOffTheBoundRxCharacteristic() async throws {
         let connection = FakeConnection()

@@ -1,4 +1,12 @@
 import Foundation
+import CoreBluetooth
+
+/// The standard GATT Heart Rate service (`0x180D`) and its Measurement
+/// characteristic (`0x2A37`) — the notify endpoint `HeartRateCodec` parses.
+public enum HeartRateService {
+    public static var service: CBUUID { CBUUID(string: "180D") }
+    public static var measurement: CBUUID { CBUUID(string: "2A37") }
+}
 
 /// Parses the standard BLE Heart Rate Measurement characteristic (`0x2A37`).
 /// Named by the profile, not the vendor — reusable for any HR strap. This is the
