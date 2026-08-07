@@ -91,7 +91,7 @@ public actor DeviceSession {
     /// Matching and parsing are one act: `select` returns the parsed value or nil,
     /// so a frame is never parsed twice. At most one request is outstanding; a
     /// second supersedes the first, which throws `CancellationError`. Throws
-    /// `DeviceSessionError.timedOut` if nothing matches in time, and
+    /// `SessionError.timedOut` if nothing matches in time, and
     /// `TransportError.notConnected` if the sources run out first.
     public func request<T: Sendable>(timeout: Duration,
                                      matching select: @escaping @Sendable (Data) -> T?) async throws -> T {
@@ -101,7 +101,7 @@ public actor DeviceSession {
         // has been answered and the `defer` has cancelled, is the *next* one's.
         let timeoutTask = Task { [weak self] in
             try await Task.sleep(for: timeout)
-            await self?.failRequest(DeviceSessionError.timedOut)
+            await self?.failRequest(SessionError.timedOut)
         }
         defer { timeoutTask.cancel() }
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, Error>) in
@@ -191,15 +191,26 @@ public actor DeviceSession {
     }
 }
 
-public enum DeviceSessionError: Error, Equatable {
+/// How a device session fails, whichever vendor's session it is. `Actuator` is
+/// declared here, so the vocabulary its methods throw belongs here too: both
+/// vendor kits had arrived at the same two cases independently.
+public enum SessionError: Error, Equatable {
     /// No frame matched the request within its timeout.
     case timedOut
+    /// A command needing the model was issued before `identify`, or identification
+    /// itself did not yield a model.
+    case notIdentified
+    /// The device has no feature of the requested kind — rotation on a vibrator,
+    /// or a motor ordinal it does not have.
+    case featureUnavailable(String)
 }
 
-extension DeviceSessionError: LocalizedError {
+extension SessionError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .timedOut: return "Device did not reply in time"
+        case .notIdentified: return "Device has not been identified"
+        case .featureUnavailable(let feature): return "Device has no \(feature)"
         }
     }
 }

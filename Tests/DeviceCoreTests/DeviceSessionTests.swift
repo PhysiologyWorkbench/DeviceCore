@@ -23,7 +23,7 @@ import Foundation
         let (session, continuation) = session()
         await settle()
         continuation.yield(Data([0x01]))
-        await #expect(throws: DeviceSessionError.timedOut) {
+        await #expect(throws: SessionError.timedOut) {
             try await session.request(timeout: .milliseconds(50)) { $0 == Data([0x02]) ? $0 : nil }
         }
     }
