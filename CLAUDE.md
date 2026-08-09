@@ -52,9 +52,9 @@ step **C2** of the repo split; each dependent's manifest carries a `PROVISIONAL`
 comment at the line, naming the URL it becomes.
 
 Sibling repos, all directly under the same parent: `DeviceCore`, `LovenseKit`,
-`PolarKit`, `PhysioKit`, `Hdf5Store`, `PWB`. The directory names are load-bearing
-— SwiftPM derives a path dependency's package identity from the directory
-basename, not from the manifest's `name:`.
+`PolarKit`, `SatisfyerKit`, `PhysioKit`, `Hdf5Store`, `SwiftLSL`, `PWB`. The
+directory names are load-bearing — SwiftPM derives a path dependency's package
+identity from the directory basename, not from the manifest's `name:`.
 
 ## The seams, and what each is for
 
