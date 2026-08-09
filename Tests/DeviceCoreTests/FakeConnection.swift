@@ -52,6 +52,10 @@ final class FakeConnection: DeviceConnection, @unchecked Sendable {
         return true
     }
 
+    func write(_ bytes: Data, to characteristic: CBUUID, ifBusy: BusyPolicy, type: WriteType) async throws -> Bool {
+        throw TransportError.characteristicNotFound("fake connection has no targeted characteristics")
+    }
+
     func read(characteristic: CBUUID) async throws -> Data {
         throw TransportError.characteristicNotFound("fake connection has no readable characteristics")
     }

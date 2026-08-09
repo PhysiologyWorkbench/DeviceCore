@@ -35,16 +35,16 @@ Sources/DeviceCore/
                          and the `Actuator` output seam
   SafetyLimits.swift   — ceiling, rise/fall rates, input timeout; pure `step`
   HeartRate*.swift     — standard GATT heart rate (0x180D / 0x2A37)
-Tests/DeviceCoreTests/ — 37 tests
+Tests/DeviceCoreTests/ — 42 tests
 ```
 
-`swift build` / `swift test` from the repo root. Green baseline: **37 tests**.
+`swift build` / `swift test` from the repo root. Green baseline: **42 tests**.
 
 ## Dependencies
 
 **None.** This is a leaf: Foundation and CoreBluetooth only.
 
-Its dependents — LovenseKit, PolarKit and the PWB app — reference it as
+Its dependents — LovenseKit, PolarKit, SatisfyerKit and the PWB app — reference it as
 `.package(path: "../DeviceCore")` **pre-publication only**. At publication that
 becomes `.package(url: "https://github.com/PhysiologyWorkbench/DeviceCore", from:
 "0.1.0")` and the sibling checkout stops being load-bearing. The switch is
@@ -63,11 +63,14 @@ basename, not from the manifest's `name:`.
 1. **`Transport` / `DeviceConnection`** — bytes. Scan, connect, an inbound
    `AsyncStream<Data>`, write with a `BusyPolicy`, GATT read, extra notify
    subscriptions.
-2. **`ScanFilter` + `EndpointResolver`** — device shape. `NotifyEndpointResolver`
-   binds rx alone (a notify-only sensor); `FixedEndpointResolver` binds an
-   explicit control-point pair. A kit may add its own resolver — that is the
-   seam working. Resist adding resolver shapes here until a real device demands
-   one.
+2. **`ScanFilter` + `EndpointResolver`** — device shape. A scan matches on any of
+   a name prefix, a service UUID, or a manufacturer company id.
+   `NotifyEndpointResolver` binds rx alone (a notify-only sensor);
+   `FixedEndpointResolver` binds an explicit control-point pair; a resolver may
+   bind tx alone (a write-only device), and then readiness is completed
+   characteristic discovery rather than notify confirmation. A kit may add its
+   own resolver — that is the seam working. Resist adding resolver shapes here
+   until a real device demands one.
 3. **`DeviceSession`** — correlation and demux (below).
 4. **`Actuator`** — one method, the entire output surface (below).
 

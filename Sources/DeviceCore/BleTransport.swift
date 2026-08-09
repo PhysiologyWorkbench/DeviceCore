@@ -123,13 +123,17 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
                                advertisementData: [String: Any], rssi RSSI: NSNumber) {
         let name = peripheral.name ?? (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? ""
         let services = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID]) ?? []
+        let manufacturer = (advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data)
+            .flatMap(ManufacturerData.init(advertisementBlob:))
         let nameMatch = scanFilter.namePrefixes.contains { name.hasPrefix($0) }
         let serviceMatch = !Set(services).isDisjoint(with: scanFilter.serviceUUIDs)
-        guard nameMatch || serviceMatch else { return }
+        let manufacturerMatch = manufacturer.map { scanFilter.manufacturerIDs.contains($0.companyID) } ?? false
+        guard nameMatch || serviceMatch || manufacturerMatch else { return }
 
         discovered[peripheral.identifier] = peripheral
         scanContinuation?.yield(Discovery(id: PeripheralID(peripheral.identifier),
-                                          name: name, rssi: RSSI.intValue, services: services))
+                                          name: name, rssi: RSSI.intValue, services: services,
+                                          manufacturer: manufacturer))
     }
 
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
@@ -168,6 +172,15 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     private var tx: CBCharacteristic?
     private var rx: CBCharacteristic?
     private var ready = false
+    /// Whether the resolver has bound endpoints. `rx` cannot stand in for this:
+    /// a write-only device binds tx alone, and a second service must not
+    /// re-resolve endpoints.
+    private var endpointsResolved = false
+    /// Services whose characteristic discovery has not yet called back. A
+    /// write-only device (no rx to confirm notifications on) becomes ready only
+    /// when this reaches zero, so that every characteristic — e.g. Device
+    /// Information's — is cached before `connect()` returns.
+    private var pendingServiceDiscoveries = 0
 
     /// Every characteristic discovered across all services, keyed by UUID — not
     /// just the endpoint resolver's tx/rx match — so `read(characteristic:)` can
@@ -176,8 +189,9 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
 
     /// Waiters for a write-with-response ACK, FIFO.
     private var responseWaiters: [CheckedContinuation<Bool, Error>] = []
-    /// Queued write-without-response payloads awaiting link readiness, FIFO.
-    private var pendingWrites: [(Data, CheckedContinuation<Bool, Error>)] = []
+    /// Queued write-without-response payloads awaiting link readiness, FIFO,
+    /// each bound to its target characteristic.
+    private var pendingWrites: [(Data, CBCharacteristic, CheckedContinuation<Bool, Error>)] = []
     /// Waiters for a characteristic read, FIFO per characteristic.
     private var readWaiters: [CBUUID: [CheckedContinuation<Data, Error>]] = [:]
     /// Extra notify streams bound by `subscribe`, keyed by characteristic UUID —
@@ -212,7 +226,7 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         stateContinuation.yield(.disconnected(reason: reason))
         inboundContinuation.finish()
         stateContinuation.finish()
-        let waiters = responseWaiters + pendingWrites.map { $0.1 }
+        let waiters = responseWaiters + pendingWrites.map { $0.2 }
         responseWaiters.removeAll(); pendingWrites.removeAll()
         waiters.forEach { $0.resume(throwing: TransportError.notConnected) }
         let readers = readWaiters.values.flatMap { $0 }
@@ -236,26 +250,47 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
                 guard let tx = self.tx else {
                     cont.resume(throwing: TransportError.characteristicNotFound("notify-only device: no writable characteristic")); return
                 }
-                if type == .withResponse, tx.properties.contains(.write) {
-                    self.responseWaiters.append(cont)
-                    self.peripheral.writeValue(bytes, for: tx, type: .withResponse)
-                } else if tx.properties.contains(.writeWithoutResponse) {
-                    if self.peripheral.canSendWriteWithoutResponse {
-                        self.peripheral.writeValue(bytes, for: tx, type: .withoutResponse)
-                        cont.resume(returning: true)
-                    } else {
-                        switch ifBusy {
-                        case .drop: cont.resume(returning: false)
-                        case .wait: self.pendingWrites.append((bytes, cont))
-                        }
-                    }
-                } else if tx.properties.contains(.write) {
-                    self.responseWaiters.append(cont)
-                    self.peripheral.writeValue(bytes, for: tx, type: .withResponse)
-                } else {
-                    cont.resume(throwing: TransportError.characteristicNotFound("tx characteristic not writable"))
+                self.performWrite(bytes, on: tx, ifBusy: ifBusy, type: type, cont: cont)
+            }
+        }
+    }
+
+    func write(_ bytes: Data, to characteristic: CBUUID, ifBusy: BusyPolicy, type: WriteType) async throws -> Bool {
+        try await withCheckedThrowingContinuation { cont in
+            queue.async {
+                guard self.ready else {
+                    cont.resume(throwing: TransportError.notConnected); return
+                }
+                guard let char = self.discoveredCharacteristics[characteristic] else {
+                    cont.resume(throwing: TransportError.characteristicNotFound("characteristic not discovered")); return
+                }
+                self.performWrite(bytes, on: char, ifBusy: ifBusy, type: type, cont: cont)
+            }
+        }
+    }
+
+    /// Queue-confined write body shared by the tx path and the targeted path.
+    private func performWrite(_ bytes: Data, on characteristic: CBCharacteristic,
+                              ifBusy: BusyPolicy, type: WriteType,
+                              cont: CheckedContinuation<Bool, Error>) {
+        if type == .withResponse, characteristic.properties.contains(.write) {
+            responseWaiters.append(cont)
+            peripheral.writeValue(bytes, for: characteristic, type: .withResponse)
+        } else if characteristic.properties.contains(.writeWithoutResponse) {
+            if peripheral.canSendWriteWithoutResponse {
+                peripheral.writeValue(bytes, for: characteristic, type: .withoutResponse)
+                cont.resume(returning: true)
+            } else {
+                switch ifBusy {
+                case .drop: cont.resume(returning: false)
+                case .wait: pendingWrites.append((bytes, characteristic, cont))
                 }
             }
+        } else if characteristic.properties.contains(.write) {
+            responseWaiters.append(cont)
+            peripheral.writeValue(bytes, for: characteristic, type: .withResponse)
+        } else {
+            cont.resume(throwing: TransportError.characteristicNotFound("tx characteristic not writable"))
         }
     }
 
@@ -300,31 +335,38 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let error { return fail(.connectFailed(error.localizedDescription)) }
+        pendingServiceDiscoveries = (peripheral.services ?? []).count
         for service in peripheral.services ?? [] {
             peripheral.discoverCharacteristics(nil, for: service)
         }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        pendingServiceDiscoveries -= 1
         for characteristic in service.characteristics ?? [] {
             discoveredCharacteristics[characteristic.uuid] = characteristic
         }
-        guard rx == nil else { return }
         // The injected resolver binds this service's endpoints, or returns nil to
-        // skip it (wait for a later service). `tx` may be nil for notify-only
-        // devices; `rx` is the readiness/inbound source.
-        guard let ep = resolver.resolve(service: service.uuid, characteristics: service.characteristics ?? []) else { return }
-        tx = ep.tx
-        rx = ep.rx
-        peripheral.setNotifyValue(true, for: ep.rx)
+        // skip it (wait for a later service). When it binds an rx, notification
+        // confirmation is the readiness signal, as before; a write-only device
+        // (rx nil) is ready once every service's characteristics are cached, so
+        // an immediate read of e.g. Device Information cannot miss.
+        if !endpointsResolved,
+           let ep = resolver.resolve(service: service.uuid, characteristics: service.characteristics ?? []) {
+            endpointsResolved = true
+            tx = ep.tx
+            rx = ep.rx
+            if let rx { peripheral.setNotifyValue(true, for: rx) }
+        }
+        if pendingServiceDiscoveries == 0, endpointsResolved, rx == nil, !ready {
+            becomeReady()
+        }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if characteristic == rx {
             if let error { return fail(.connectFailed(error.localizedDescription)) }
-            ready = true
-            stateContinuation.yield(.ready)
-            onReady?()
+            becomeReady()
             return
         }
         guard let waiter = subscribeWaiters.removeValue(forKey: characteristic.uuid) else { return }
@@ -366,12 +408,17 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
     }
 
     func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
-        guard let tx else { return }
         while peripheral.canSendWriteWithoutResponse, !pendingWrites.isEmpty {
-            let (bytes, cont) = pendingWrites.removeFirst()
-            peripheral.writeValue(bytes, for: tx, type: .withoutResponse)
+            let (bytes, characteristic, cont) = pendingWrites.removeFirst()
+            peripheral.writeValue(bytes, for: characteristic, type: .withoutResponse)
             cont.resume(returning: true)
         }
+    }
+
+    private func becomeReady() {
+        ready = true
+        stateContinuation.yield(.ready)
+        onReady?()
     }
 
     private func fail(_ error: TransportError) {

@@ -73,15 +73,31 @@ Four of the family's nine, the ones that are this library's own:
 ## The transport layer
 
 - **`Transport.swift` — the abstract vocabulary.** `Transport` (scan/connect),
-  `DeviceConnection` (inbound stream, write with a `BusyPolicy`, GATT read, extra
-  notify subscriptions), `ScanFilter`, and the `EndpointResolver` seam.
+  `DeviceConnection` (inbound stream, write with a `BusyPolicy` — to the resolved
+  tx or to a named characteristic, for one-shot control writes like an init
+  byte — GATT read, extra notify subscriptions), `ScanFilter`, and the
+  `EndpointResolver` seam.
 
   The resolver is the input/output pivot: a notify-only sensor binds rx alone
   (`NotifyEndpointResolver`); a control-point device binds an explicit pair
   (`FixedEndpointResolver`); a serial device that needs a catalogue to find its
   writable tx binds both, and that resolver lives in the kit that owns the
-  catalogue. **Resist further resolver shapes here until a real device demands
-  one.**
+  catalogue; a write-only device (Satisfyer — no notify characteristic anywhere)
+  binds tx alone, and its resolver lives in its kit. **Resist further resolver
+  shapes here until a real device demands one.**
+
+  Readiness follows the binding: rx, when bound, is the readiness signal (notify
+  confirmation), as it always was. With no rx, the connection is ready once every
+  service's characteristics are discovered — later than strictly necessary, and
+  deliberately so, because the first thing a nameless device's kit does is
+  `read(characteristic:)` against Device Information, which must already be
+  cached. `inbound` then never yields and finishes on disconnect.
+
+  `ScanFilter` matches on any of: name prefix, advertised service UUID, or
+  manufacturer company id. The company-id match is deliberately coarse —
+  narrowing on the manufacturer payload (a model id, say) is the kit's job, off
+  `Discovery.manufacturer`. It exists because some devices (Satisfyer) advertise
+  no name and no service, only manufacturer data.
 - **`BleTransport` / `BleConnection` — the one CoreBluetooth implementation**,
   device-neutral: it takes a `ScanFilter` and an `EndpointResolver`, never a
   catalogue. Identical on macOS and iOS.
