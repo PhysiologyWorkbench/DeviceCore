@@ -171,6 +171,32 @@ per-vendor harnesses live in the kits (`lovense-harness`, `polar-harness`), whic
 is where a device to point them at also lives. Budget one hardware round-trip per
 new binary stream.
 
+## The family board
+
+The owner-blocked queue for the whole family lives in **PWB**, at
+`../PWB/.devtool/features/` — one kanban-markdown card per task (YAML
+frontmatter, rendered by the LachyFS.kanban-markdown extension in VSCodium).
+Labels say who is blocked — `owner-bench`, `owner-decision`, `agent`, `gated` —
+and which repo owns the work.
+
+**One board, not one per repo, because the bottleneck is one person.** NOW.md
+still answers "where does this repo stand"; the board answers "where does the
+owner stand", and that question does not decompose per repo.
+
+Work done from here updates the cards there:
+
+- **Move the card with the work.** Status changes travel in the same
+  commit-sized unit as the change they describe; a card that closes moves to
+  `done/` with `completedAt` set. A board updated in a later sweep is a board
+  that reports yesterday.
+- **A card is an index entry, never a copy.** The detail belongs in this repo's
+  ROADMAP.md and its other records; the card names the goal, points at that
+  section, and gives the next command. Copying detail into a card creates a
+  second source of truth that drifts from the first.
+- **Ask before adding a card.** New work appearing mid-task is normal and worth
+  capturing, but what belongs on the owner's queue is the owner's judgement,
+  not the agent's.
+
 ## Design record
 
 `ARCHITECTURE.md` — the seams and why they are where they are.
