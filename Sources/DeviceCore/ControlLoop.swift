@@ -12,6 +12,14 @@ import Foundation
 /// is the vendor kit's business: the kit's documentation says which modes its
 /// devices have and what a caller must do about them.
 public protocol Actuator: Sendable {
+    /// The grid this device's command deliveries quantise to — for a BLE toy,
+    /// its measured connection interval, or the finest command spacing the
+    /// bench has shown it to render. A pulse whose duration is a whole multiple
+    /// of this lands both edges the same distance into their delivery slots, so
+    /// the quantisation cancels out of the felt length instead of adding to it.
+    /// Callers choosing pulse durations should round to this.
+    var writeGranularity: Duration { get }
+
     @discardableResult
     func setVibration(_ ordinal: Int, _ level: Double, ifBusy: BusyPolicy) async throws -> Bool
 }
@@ -75,6 +83,11 @@ public actor ControlLoop {
     /// and the next tick would fade down from it, re-energising a stopped toy.
     private var stopEpoch = 0
     private var ticker: Task<Void, Never>?
+    /// The task driving a pulse's edges against absolute deadlines. While it
+    /// exists, it owns the output and the tick keeps only the watchdog.
+    private var pulseTask: Task<Void, Never>?
+    /// Guards `pulseTask` against a finished pulse clearing its successor.
+    private var pulseGeneration = 0
 
     public let status: AsyncStream<ControlStatus>
 
@@ -124,6 +137,30 @@ public actor ControlLoop {
         target = level
     }
 
+    /// One beat: rise to `level` now and begin the fall `duration` after the
+    /// rise began, every write scheduled against an absolute deadline on the
+    /// actuator's `writeGranularity` grid — never the tick, whose quantisation
+    /// is exactly the pulse-length jitter this exists to remove. The envelope
+    /// applies as on the tick path: the level is clamped to the ceiling and
+    /// both ramps run at the limits' rates, in granularity-sized steps.
+    ///
+    /// A pulse ends in silence — the target is zeroed, so nothing re-rises —
+    /// and a new pulse supersedes a running one. Durations that are whole
+    /// multiples of the granularity render with the least length jitter; a
+    /// rise slower than `duration` simply starts the fall when it completes.
+    /// A stopped loop ignores this entirely, like `setTarget`.
+    public func pulse(_ level: Double, for duration: Duration) {
+        guard stopped == nil else { return }
+        pulseTask?.cancel()
+        target = 0
+        pulseGeneration += 1
+        let generation = pulseGeneration
+        pulseTask = Task { [weak self] in
+            await self?.runPulse(to: level, for: duration)
+            await self?.pulseEnded(generation)
+        }
+    }
+
     /// Notes that the sensor is alive. The watchdog fades the loop down if this
     /// goes quiet for longer than the limits allow.
     public func heartbeat() {
@@ -143,6 +180,7 @@ public actor ControlLoop {
     /// not noticed yet.
     public func fadeDown(_ reason: StopReason) {
         guard stopped == nil else { return }
+        cancelPulse()
         target = 0
         stopped = reason
         publish()
@@ -156,6 +194,7 @@ public actor ControlLoop {
     /// fade early must always work — but the first reason sticks: a distress fade
     /// cut short is still a distress stop, and the record must say so.
     public func hardStop(_ reason: StopReason = .operatorStop) async {
+        cancelPulse()
         target = 0
         if stopped == nil { stopped = reason }
         stopEpoch += 1
@@ -191,30 +230,83 @@ public actor ControlLoop {
         if stopped == nil, expectingInput, sinceInput >= limits.inputTimeout.seconds {
             fadeDown(.sensorLost)
         }
+        // A running pulse owns the output; the tick keeps only the watchdog.
+        guard pulseTask == nil else { return }
+        _ = await command(limits.step(current: level, target: stopped == nil ? target : 0, dt: dt))
+    }
 
-        let next = limits.step(current: level, target: stopped == nil ? target : 0, dt: dt)
+    /// A pulse's edges, one write per granularity slot against deadlines fixed
+    /// at the start — so the rendered length depends on the deadlines and not on
+    /// when any individual write got through. A cancellation (a stop, or the
+    /// pulse that superseded this one) surfaces at the next sleep and ends it.
+    private func runPulse(to goal: Double, for duration: Duration) async {
+        let spacing = max(actuator.writeGranularity, .milliseconds(1))
+        let dt = spacing.seconds
+        let clock = ContinuousClock()
+        let start = clock.now
+        do {
+            // The level the ramp is heading for — approached from below normally,
+            // from above when this pulse superseded a taller one mid-flight.
+            let plateau = min(max(goal, 0), limits.ceiling)
+            var slot = 0
+            while stopped == nil {
+                let next = limits.step(current: level, target: goal, dt: dt)
+                guard await command(next) else { return }
+                guard next != plateau else { break }
+                slot += 1
+                try await clock.sleep(until: start + spacing * slot, tolerance: .zero)
+            }
+            try await clock.sleep(until: start + duration, tolerance: .zero)
+            slot = 0
+            while stopped == nil {
+                let next = limits.step(current: level, target: 0, dt: dt)
+                guard await command(next) else { return }
+                guard next > 0 else { break }
+                slot += 1
+                try await clock.sleep(until: start + duration + spacing * slot, tolerance: .zero)
+            }
+        } catch {}
+    }
+
+    private func pulseEnded(_ generation: Int) {
+        guard generation == pulseGeneration else { return }
+        pulseTask = nil
+    }
+
+    private func cancelPulse() {
+        pulseTask?.cancel()
+        pulseTask = nil
+    }
+
+    /// The one guarded path a level takes to the device, shared by the tick and
+    /// the pulse. Returns whether the caller may keep driving — false when the
+    /// link is gone or a hard stop landed while the write was in flight.
+    private func command(_ next: Double) async -> Bool {
         guard next != lastSent else {
             level = next
-            return
+            return true
         }
         // A zero is the tail of a fade or a stop, and must not be dropped; every
-        // other level is superseded by the next tick if the link is busy.
+        // other level is superseded by the next offer if the link is busy.
         let policy: BusyPolicy = next == 0 ? .wait : .drop
         let epoch = stopEpoch
         do {
-            guard try await actuator.setVibration(0, next, ifBusy: policy) else { return }
+            // A refused `.drop` write advances nothing: the level stays where it
+            // is for the next offer, so a ramp cannot jump by what was dropped.
+            guard try await actuator.setVibration(0, next, ifBusy: policy) else { return true }
         } catch {
             // The write failed, so the link is gone. Nothing can be commanded and
             // nothing should be assumed about the device's state.
             fadeDown(.actuatorLost)
-            return
+            return false
         }
         // A hard stop that landed while the write was in flight has already zeroed
         // the device and the bookkeeping; committing `next` here would undo it.
-        guard epoch == stopEpoch else { return }
+        guard epoch == stopEpoch else { return false }
         level = next
         lastSent = next
         publish()
+        return true
     }
 
     private func publish() {

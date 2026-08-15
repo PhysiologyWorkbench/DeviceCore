@@ -10,6 +10,8 @@ final class FakeActuator: Actuator, @unchecked Sendable {
         let ordinal: Int
         let level: Double
         let ifBusy: BusyPolicy
+        /// When the write arrived, for the pulse tests' edge-timing assertions.
+        let at: ContinuousClock.Instant
 
         /// The raw step a 0…20 toy would have been sent. The scaling itself is the
         /// vendor session's, and tested there; here it only keeps the assertions in
@@ -76,6 +78,11 @@ final class FakeActuator: Actuator, @unchecked Sendable {
 
     // MARK: Actuator
 
+    /// Small enough that a pulse test's ramps finish in a few tens of
+    /// milliseconds; individual tests override where the arithmetic wants a
+    /// particular step size.
+    var writeGranularity: Duration = .milliseconds(10)
+
     func setVibration(_ ordinal: Int, _ level: Double, ifBusy: BusyPolicy) async throws -> Bool {
         let hold = lock.withLock { () -> Bool in
             defer { holdNext = false }
@@ -94,7 +101,7 @@ final class FakeActuator: Actuator, @unchecked Sendable {
         return try lock.withLock {
             guard !linkFailed else { throw TransportError.notConnected }
             guard linkBusy, case .drop = ifBusy else {
-                storedSetpoints.append(Setpoint(ordinal: ordinal, level: level, ifBusy: ifBusy))
+                storedSetpoints.append(Setpoint(ordinal: ordinal, level: level, ifBusy: ifBusy, at: .now))
                 return true
             }
             return false

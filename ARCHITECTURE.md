@@ -162,11 +162,22 @@ subtraction — the merged one reaches states neither original could.**
   is no API that emits a level which has not been through all of it. A layer
   *above* the sender is a layer you can route around; inside, you cannot, and it
   costs nothing.
+  **`pulse(level, for:)`** is the one deliberate exception to tick timing, added
+  when the bench showed felt rhythm stands or falls on pulse-*length* constancy:
+  both edges of a tick-rendered pulse quantise independently onto the tick and
+  then the connection-event grid, and the length collects every error. A pulse
+  schedules its rise, hold and fall against absolute deadlines on the actuator's
+  `writeGranularity` grid instead — same envelope, same guarded write path, same
+  stop authority (a stop or a superseding pulse cancels it; while it runs, the
+  tick keeps only the watchdog). Durations chosen as whole multiples of the
+  granularity land both edges the same distance into their delivery slots, so
+  the grid cancels out of the felt length.
 - **`SafetyLimits`** — ceiling, rise and fall rates, input timeout, one pure
   `step`. The whole envelope is testable without a radio.
 - **`Actuator`** — one method: set one vibrator to a level in 0…1 and say whether
-  the bytes reached the link. A vendor kit conforms its session to it; this
-  library never learns a wire protocol.
+  the bytes reached the link, plus one number: `writeGranularity`, the grid the
+  device's command deliveries quantise to. A vendor kit conforms its session to
+  it; this library never learns a wire protocol.
 
 Three rules the tests exist to hold:
 
