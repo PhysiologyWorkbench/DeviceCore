@@ -36,6 +36,17 @@ public struct Discovery: @unchecked Sendable {
     /// a device that does advertise it: discoveries are coalesced, and the packet
     /// that surfaced this peripheral may have lacked the field.
     public let manufacturer: ManufacturerData?
+
+    /// Public because `Transport` is implementable outside the module — a fake
+    /// transport's `scan()` has to be able to yield these.
+    public init(id: PeripheralID, name: String, rssi: Int, services: [CBUUID],
+                manufacturer: ManufacturerData? = nil) {
+        self.id = id
+        self.name = name
+        self.rssi = rssi
+        self.services = services
+        self.manufacturer = manufacturer
+    }
 }
 
 /// What a scan matches on: an advertised name prefix, an advertised service UUID,
