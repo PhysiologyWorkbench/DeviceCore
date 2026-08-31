@@ -8,6 +8,7 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
     private let queue = DispatchQueue(label: "io.lelut.ble.transport")
     private let scanFilter: ScanFilter
     private let resolver: EndpointResolver
+    private let scanOptions: [String: Any]?
     private var central: CBCentralManager!
 
     private var poweredOn = false
@@ -21,9 +22,14 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
     private var connections: [UUID: BleConnection] = [:]
     private var connectWaiters: [UUID: CheckedContinuation<DeviceConnection, Error>] = [:]
 
-    public init(scanFilter: ScanFilter, resolver: EndpointResolver) {
+    /// `reportsDuplicates` yields every advertisement rather than the first per
+    /// peripheral. A caller that holds no link has no other way to notice a
+    /// device going away — the advertisements stopping is the only signal — and
+    /// pays for it in radio wake-ups, so it is off unless asked for.
+    public init(scanFilter: ScanFilter, resolver: EndpointResolver, reportsDuplicates: Bool = false) {
         self.scanFilter = scanFilter
         self.resolver = resolver
+        scanOptions = reportsDuplicates ? [CBCentralManagerScanOptionAllowDuplicatesKey: true] : nil
         super.init()
         central = CBCentralManager(delegate: self, queue: queue)
     }
@@ -50,7 +56,9 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
                 self.scanGeneration += 1
                 let generation = self.scanGeneration
                 self.scanContinuation = continuation
-                if self.poweredOn { self.central.scanForPeripherals(withServices: nil) }
+                if self.poweredOn {
+                    self.central.scanForPeripherals(withServices: nil, options: self.scanOptions)
+                }
                 continuation.onTermination = { _ in
                     self.queue.async {
                         guard self.scanGeneration == generation else { return }
@@ -108,7 +116,9 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
             poweredOn = true
             powerWaiters.forEach { $0.resume() }
             powerWaiters.removeAll()
-            if scanContinuation != nil { central.scanForPeripherals(withServices: nil) }
+            if scanContinuation != nil {
+                central.scanForPeripherals(withServices: nil, options: scanOptions)
+            }
         case .unauthorized, .poweredOff, .unsupported:
             let err = TransportError.bluetoothUnavailable(String(describing: central.state))
             powerError = err
