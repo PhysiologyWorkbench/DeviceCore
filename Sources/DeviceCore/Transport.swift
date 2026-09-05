@@ -27,6 +27,10 @@ public struct ManufacturerData: Sendable, Equatable {
     }
 }
 
+/// One peripheral as a scan saw it: identity plus the advertisement fields a
+/// filter or a catalogue lookup needs. A snapshot of the packet that surfaced it
+/// rather than a handle — `rssi` is that packet's — and connecting is
+/// `Transport`'s job, not this value's.
 public struct Discovery: @unchecked Sendable {
     public let id: PeripheralID
     public let name: String
@@ -119,6 +123,10 @@ public struct FixedEndpointResolver: EndpointResolver, @unchecked Sendable {
     }
 }
 
+/// What a `DeviceConnection` reports on its `state` stream: `.ready` once the
+/// endpoints are resolved and notifications are subscribed, then at most one
+/// `.disconnected`, after which the stream ends. The reason is whatever
+/// CoreBluetooth said about the drop, and nil when it said nothing.
 public enum ConnectionState: Sendable, Equatable {
     case ready
     case disconnected(reason: String?)
@@ -143,6 +151,9 @@ public enum WriteType: Sendable {
     case withResponse
 }
 
+/// How the BLE side fails. Vendor-neutral by construction: these name the radio,
+/// the link and the GATT surface, never a device's own protocol — a malformed
+/// vendor reply is that kit's codec to report, not a transport error.
 public enum TransportError: Error, Sendable, Equatable {
     case bluetoothUnavailable(String)
     case connectTimeout

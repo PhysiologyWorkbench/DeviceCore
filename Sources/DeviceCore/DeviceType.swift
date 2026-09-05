@@ -151,6 +151,8 @@ public struct ProbeRef: Codable, Sendable, Equatable {
 /// the UX can say "no baseline recorded" honestly; the curve's own shape is
 /// settled with the calibration work, not here.
 public struct CalibrationBaseline: Codable, Sendable {
+    /// One measured pair on that curve: the commanded `step` and the `output`
+    /// it produced, in the baseline's `unit`.
     public struct Point: Codable, Sendable {
         public var step: Int
         public var output: Double
