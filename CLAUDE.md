@@ -203,3 +203,11 @@ Work done from here updates the cards there:
 `LESSONS.md` — dated lessons; skim before work that resembles past work.
 The system-wide picture (apps, pipeline, recording, research programmes) is in
 the **PWB** repo's ARCHITECTURE.md.
+
+## The architecture gate
+
+Family-wide architecture rules run as a pre-push hook in every repo. After
+any structural change here — imports added, public types added, isolation
+attributes changed — run
+`swift test --package-path ../PWB/tools/arch/ArchRules`; fix or get a ruling,
+never bypass silently. Setup and detail: `../PWB/TOOLING.md`.
