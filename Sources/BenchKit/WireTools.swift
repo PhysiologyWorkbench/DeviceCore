@@ -10,7 +10,7 @@ public enum WireCatalogue {
             WireScanTool(radio: radio),
             WireSurveyTool(radio: radio),
             WireNotifyTool(radio: radio),
-        ])
+        ], claimsRadio: true)
     }
 
     public static func live() -> BenchCatalogue {

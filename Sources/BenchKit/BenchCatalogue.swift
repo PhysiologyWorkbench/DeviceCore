@@ -9,10 +9,16 @@ public struct BenchCatalogue: Sendable {
     /// `lovense`.
     public let noun: String
     public let tools: [any BenchTool]
+    /// Whether these tools drive the radio, and so cannot run while the app
+    /// holds it (bench-host-toolbox.md "Radio contention"). A catalogue over
+    /// some other transport — the host's audio endpoints, a serial rig —
+    /// says no and is not gated by a live control channel.
+    public let claimsRadio: Bool
 
-    public init(noun: String, tools: [any BenchTool]) {
+    public init(noun: String, tools: [any BenchTool], claimsRadio: Bool = false) {
         self.noun = noun
         self.tools = tools
+        self.claimsRadio = claimsRadio
     }
 }
 
@@ -36,5 +42,11 @@ public struct BenchToolRegistry: Sendable {
 
     public func tool(named name: String) -> (any BenchTool)? {
         tools.first { $0.name == name }
+    }
+
+    /// The catalogue a tool came from — what a front-end asks before applying
+    /// a rule that belongs to one kind of tool rather than to all of them.
+    public func catalogue(containing name: String) -> BenchCatalogue? {
+        catalogues.first { $0.tools.contains { $0.name == name } }
     }
 }
