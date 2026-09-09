@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: Build and test (macOS)
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - run: swift --version
+      - run: swift build
+      - run: swift test
+
+  ios:
+    name: Build (iOS simulator)
+    runs-on: macos-15
+    timeout-minutes: 15
+    # iOS is a hard requirement (CLAUDE.md) and `swift test` never exercises it,
+    # so the platform is checked by a build rather than by the manifest alone.
+    steps:
+      - uses: actions/checkout@v5
+      - run: xcodebuild -version
+      - run: |
+          xcodebuild build -quiet \
+            -scheme DeviceCore-Package \
+            -destination 'generic/platform=iOS Simulator'

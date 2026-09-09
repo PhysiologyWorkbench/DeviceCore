@@ -48,9 +48,9 @@ Sources/BenchKit/      — the second product (2026-09-09, PWB
 Tests/DeviceCoreTests/, Tests/BenchKitTests/
 ```
 
-`swift build` / `swift test` from the repo root. Green baseline: **65 tests**
-(57 DeviceCore + 8 BenchKit; the "42" recorded here before 2026-09-09 was
-stale).
+`swift build` / `swift test` from the repo root. Green baseline: **89 tests**
+(59 DeviceCore + 30 BenchKit). CI runs the same two commands on `macos-15`, plus
+an iOS-simulator build, since `swift test` never exercises iOS.
 
 ## Dependencies
 

@@ -9,7 +9,11 @@ It names no manufacturer. Protocol knowledge lives in a vendor kit above it
 correlation, standard GATT profiles, and the one method a control loop drives an
 actuator through.
 
-## What is in it
+The package ships two libraries: `DeviceCore`, the device I/O core, and
+`BenchKit`, the host-side bench substrate the vendor kits' bench tools are built
+on. Nothing in `DeviceCore` imports `BenchKit`.
+
+## What is in `DeviceCore`
 
 | | |
 | --- | --- |
@@ -21,6 +25,19 @@ actuator through.
 | `Actuator` | the output seam: one method, conformed by a vendor kit's session |
 | `HeartRateCodec` / `HeartRateReader` | standard BLE heart rate (`0x180D`/`0x2A37`) — any strap, so it belongs to no vendor |
 
+## What is in `BenchKit`
+
+Bench tools measure a real device over a real radio and return a verdict. What
+they share — and what this library is — is the frame around the measurement, so
+that a result can be cited later as *tool @ commit × run UUID*.
+
+| | |
+| --- | --- |
+| `BenchTool` / `BenchCatalogue` | the tool seam: a name, a synopsis, declared arguments, one `run` returning a verdict; catalogues group tools under a noun |
+| `BenchToolRunner` | argument validation before a run exists, then the provenance frame: run UUID, commit table, timestamps, captures collected from the run directory |
+| `RunRecord` / `RunRecordStore` | the typed record and its store — one directory per run UUID, git-diffable JSON, `schemaVersion` refused rather than guessed |
+| `WireRadio` / `WireCatalogue` | the vendor-neutral wire tools every host has before any kit: `wire.scan`, `wire.survey`, `wire.notify` |
+
 ## Requirements
 
 Swift 6.0, macOS 13+ / iOS 16+. No dependencies beyond Foundation and
@@ -29,8 +46,10 @@ CoreBluetooth.
 ## Use
 
 ```swift
-.package(url: "https://github.com/PhysiologyWorkbench/DeviceCore", from: "0.1.0")
+.package(url: "https://github.com/PhysiologyWorkbench/DeviceCore", branch: "main")
 ```
+
+No release is tagged yet, so pin `branch: "main"` until one is.
 
 ```swift
 let transport = BleTransport(
@@ -54,7 +73,7 @@ for await reading in await HeartRateReader(connection: connection).readings() {
 
 ```sh
 swift build
-swift test        # 37 tests, no hardware required
+swift test        # 89 tests, no hardware required
 ```
 
 The tests are parser- and mechanism-level and run without a radio. Transport and
@@ -79,4 +98,4 @@ envelope has been exercised on real radios, not only against fakes.
 
 ## Licence
 
-Not yet stated — the repository is pre-publication.
+MIT — see [LICENSE](LICENSE).
