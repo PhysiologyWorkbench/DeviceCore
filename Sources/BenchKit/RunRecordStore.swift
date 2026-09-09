@@ -24,11 +24,18 @@ public struct RunRecordStore: Sendable {
         let dir = directory(for: record.id)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("record.json")
+        try Self.canonicalData(of: record).write(to: url, options: .atomic)
+        return url
+    }
+
+    /// The one serialisation `write` produces — pretty, sorted keys, ISO8601
+    /// dates — exposed so a verifier can check a stored file is in canonical
+    /// form and a CLI can emit records in the same shape.
+    public static func canonicalData(of record: RunRecord) throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        try encoder.encode(record).write(to: url, options: .atomic)
-        return url
+        return try encoder.encode(record)
     }
 
     public func read(id: UUID) throws -> RunRecord {

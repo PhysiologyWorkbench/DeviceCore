@@ -35,17 +35,37 @@ public struct RunRecord: Codable, Equatable, Sendable {
     public var captures: [String]
     /// The tool's measured results; shape owned by the tool.
     public var results: JSONValue
+    /// R54's stamp (PWB `design/bench-host-toolbox.md`, "The export
+    /// boundary"): absent on every bench-made record; `nonBenchImport` on a
+    /// record `pwb record export --file` produced from a recording that
+    /// carries no run UUID, so the exception is visible in the store rather
+    /// than silent.
+    public var origin: Origin?
 
     /// Mirrors the CLI's exit-code convention: `pass` and `fail` are the
     /// tool's verdict on the device, `error` means the run itself broke.
     public enum Outcome: String, Codable, Sendable {
         case pass, fail, error
+
+        /// The exit code the CLI convention assigns: 0 pass, 1 fail, 2 error.
+        public var exitCode: Int32 {
+            switch self {
+            case .pass: 0
+            case .fail: 1
+            case .error: 2
+            }
+        }
+    }
+
+    public enum Origin: String, Codable, Sendable {
+        case nonBenchImport = "non-bench-import"
     }
 
     public init(id: UUID = UUID(), tool: String, commit: String,
                 started: Date, ended: Date, unit: String? = nil,
                 arguments: [String: String] = [:], outcome: Outcome,
-                captures: [String] = [], results: JSONValue = .object([:])) {
+                captures: [String] = [], results: JSONValue = .object([:]),
+                origin: Origin? = nil) {
         schemaVersion = Self.currentSchemaVersion
         self.id = id
         self.tool = tool
@@ -57,5 +77,6 @@ public struct RunRecord: Codable, Equatable, Sendable {
         self.outcome = outcome
         self.captures = captures
         self.results = results
+        self.origin = origin
     }
 }
