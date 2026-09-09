@@ -36,7 +36,7 @@ Sources/DeviceCore/
   SafetyLimits.swift   — ceiling, rise/fall rates, input timeout; pure `step`
   HeartRate*.swift     — standard GATT heart rate (0x180D / 0x2A37)
 Sources/BenchKit/      — the second product (2026-09-09, PWB
-                         design/host-toolbox.md R46): the bench substrate the
+                         design/bench-host-toolbox.md R46): the bench substrate the
                          vendor kits' bench targets build on. So far the
                          run-record schema — RunRecord (schemaVersion from day
                          one), JSONValue, RunRecordStore (one directory per

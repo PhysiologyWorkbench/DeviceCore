@@ -2,7 +2,7 @@ import Foundation
 
 /// One bench run's typed record — the provenance frame every tool's output
 /// shares. Evidence cites *tool @ commit × run UUID* (PWB
-/// `design/host-toolbox.md` R53), and this type is where those parts live:
+/// `design/bench-host-toolbox.md` R53), and this type is where those parts live:
 /// who ran what, when, against which unit, with which code, ending how. The
 /// measured results are a `JSONValue` tree the tool owns; raw capture files
 /// sit beside the record in its run directory.
