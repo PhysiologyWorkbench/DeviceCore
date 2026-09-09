@@ -35,10 +35,22 @@ Sources/DeviceCore/
                          and the `Actuator` output seam
   SafetyLimits.swift   — ceiling, rise/fall rates, input timeout; pure `step`
   HeartRate*.swift     — standard GATT heart rate (0x180D / 0x2A37)
-Tests/DeviceCoreTests/ — 42 tests
+Sources/BenchKit/      — the second product (2026-09-09, PWB
+                         design/host-toolbox.md R46): the bench substrate the
+                         vendor kits' bench targets build on. So far the
+                         run-record schema — RunRecord (schemaVersion from day
+                         one), JSONValue, RunRecordStore (one directory per
+                         run UUID, git-diffable JSON). The tool skeleton and
+                         the generic wire primitives follow
+                         (benchkit-run-records-2026-09-09 on the family
+                         board). No app or shared library imports it — arch
+                         rule `benchKitStaysOutOfAppsAndLibraries`.
+Tests/DeviceCoreTests/, Tests/BenchKitTests/
 ```
 
-`swift build` / `swift test` from the repo root. Green baseline: **42 tests**.
+`swift build` / `swift test` from the repo root. Green baseline: **65 tests**
+(57 DeviceCore + 8 BenchKit; the "42" recorded here before 2026-09-09 was
+stale).
 
 ## Dependencies
 
