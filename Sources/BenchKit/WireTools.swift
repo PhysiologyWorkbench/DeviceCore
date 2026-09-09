@@ -1,4 +1,5 @@
 import Foundation
+import DeviceCore
 
 /// The generic wire tools — the catalogue every host has before any vendor
 /// kit is involved. Each takes its measurements through a `WireRadio`,
@@ -99,10 +100,29 @@ public struct WireSurveyTool: BenchTool {
         }
         try WireJSON.pretty(survey).write(to: context.captureURL("gatt-walk.json"))
         return BenchToolOutput(outcome: .pass, results: .object([
-            "survey": try JSONValue(encoding: survey),
             "serviceCount": .number(Double(survey.services.count)),
             "characteristicCount": .number(Double(survey.services.map(\.characteristics.count).reduce(0, +))),
-        ]))
+        ]), units: [Self.dutUnit(of: survey)])
+    }
+
+    /// The `dut` row a survey asserts (`unit-identity.md`, "What the bench
+    /// writes"): the connection as a binding, the advertised name and the
+    /// Device Information Service strings as claims.
+    static func dutUnit(of survey: GattSurvey) -> PhysicalUnit {
+        var claims: [String: String] = [:]
+        claims["ble.name"] = survey.name
+        for service in survey.services
+        where service.uuid.uppercased() == DeviceInformationService.uuid {
+            for characteristic in service.characteristics {
+                guard let key = DeviceInformationService.claimKey(
+                        forCharacteristic: characteristic.uuid),
+                      let hex = characteristic.value,
+                      let bytes = Data(hexString: hex) else { continue }
+                claims[key] = DeviceInformationService.claimValue(bytes)
+            }
+        }
+        return PhysicalUnit(role: .dut, claims: claims,
+                               bindings: ["cb.peripheral": survey.peripheral.uuidString])
     }
 }
 

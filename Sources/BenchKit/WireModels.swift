@@ -163,16 +163,22 @@ public enum WireJSON {
     }
 }
 
-extension JSONValue {
-    /// The value's JSON tree — how a typed result (a GATT survey) lands in
-    /// `RunRecord.results` without the record knowing its shape.
-    public init(encoding value: some Encodable) throws {
-        self = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(value))
-    }
-}
-
 extension Data {
     var hexString: String {
         map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// The bytes of an even-length hex string; nil when it is not one.
+    init?(hexString: String) {
+        guard hexString.count.isMultiple(of: 2) else { return nil }
+        var bytes: [UInt8] = []
+        var index = hexString.startIndex
+        while index < hexString.endIndex {
+            let next = hexString.index(index, offsetBy: 2)
+            guard let byte = UInt8(hexString[index..<next], radix: 16) else { return nil }
+            bytes.append(byte)
+            index = next
+        }
+        self.init(bytes)
     }
 }

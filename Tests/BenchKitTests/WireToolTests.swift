@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import DeviceCore
 @testable import BenchKit
 
 /// A radio that answers from a script — the live end is the owner's bench.
@@ -32,7 +33,7 @@ private struct ScriptedRadio: WireRadio {
     }
 
     private func context(_ arguments: [String: String]) -> BenchContext {
-        BenchContext(arguments: arguments, unit: nil, runDirectory: directory)
+        BenchContext(arguments: arguments, runDirectory: directory)
     }
 
     private let pineTime = UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!
@@ -124,11 +125,27 @@ private struct ScriptedRadio: WireRadio {
         }
         #expect(results["serviceCount"] == .number(2))
         #expect(results["characteristicCount"] == .number(3))
-        #expect(results["survey"] == (try JSONValue(encoding: surveyScript)))
+        #expect(output.units == [
+            PhysicalUnit(role: .dut,
+                 claims: ["ble.name": "InfiniTime", "dis.model": "InfiniTime"],
+                 bindings: ["cb.peripheral": pineTime.uuidString]),
+        ])
 
         let capture = try Data(contentsOf: directory.appendingPathComponent("gatt-walk.json"))
         let reread = try JSONDecoder().decode(GattSurvey.self, from: capture)
         #expect(reread == surveyScript)
+    }
+
+    @Test func aValuelessDisCharacteristicClaimsNothing() {
+        let survey = GattSurvey(peripheral: verity, name: nil, services: [
+            .init(uuid: "180a", isPrimary: true, characteristics: [
+                .init(uuid: "2a25", properties: ["read"], value: nil, descriptors: []),
+                .init(uuid: "2a29", properties: ["read"], value: "506f6c6172", descriptors: []),
+            ]),
+        ])
+        #expect(WireSurveyTool.dutUnit(of: survey) == PhysicalUnit(
+            role: .dut, claims: ["dis.manufacturer": "Polar"],
+            bindings: ["cb.peripheral": verity.uuidString]))
     }
 
     @Test func surveyOfAnAbsentDeviceFailsWithTheReason() async throws {

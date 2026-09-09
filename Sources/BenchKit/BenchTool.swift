@@ -1,4 +1,5 @@
 import Foundation
+import DeviceCore
 
 /// One host-side bench tool: the frame the vendor kits fill (R46, PWB
 /// `design/bench-host-toolbox.md` layer 1). A tool measures and verdicts; the
@@ -39,12 +40,10 @@ public struct BenchToolArgument: Equatable, Sendable {
 /// directory.
 public struct BenchContext: Sendable {
     public let arguments: [String: String]
-    public let unit: String?
     public let runDirectory: URL
 
-    public init(arguments: [String: String], unit: String?, runDirectory: URL) {
+    public init(arguments: [String: String], runDirectory: URL) {
         self.arguments = arguments
-        self.unit = unit
         self.runDirectory = runDirectory
     }
 
@@ -56,13 +55,20 @@ public struct BenchContext: Sendable {
     }
 }
 
-/// The tool-owned half of a run's outcome; the runner wraps it in the record.
+/// The tool-owned half of a run's outcome; the runner wraps it in the
+/// record, writes `results` to `results.json`, and appends the `host` row
+/// to `units`.
 public struct BenchToolOutput: Sendable {
     public var outcome: RunRecord.Outcome
     public var results: JSONValue
+    /// The unit rows the tool knows: its `dut`, any `reference` or `path`
+    /// device — never the `host`, which is the runner's.
+    public var units: [PhysicalUnit]
 
-    public init(outcome: RunRecord.Outcome, results: JSONValue = .object([:])) {
+    public init(outcome: RunRecord.Outcome, results: JSONValue = .object([:]),
+                units: [PhysicalUnit] = []) {
         self.outcome = outcome
         self.results = results
+        self.units = units
     }
 }

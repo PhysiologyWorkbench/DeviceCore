@@ -21,21 +21,40 @@ public struct RunRecordStore: Sendable {
     /// record's URL.
     @discardableResult
     public func write(_ record: RunRecord) throws -> URL {
-        let dir = directory(for: record.id)
+        let dir = directory(for: record.runUUID)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("record.json")
         try Self.canonicalData(of: record).write(to: url, options: .atomic)
         return url
     }
 
-    /// The one serialisation `write` produces — pretty, sorted keys, ISO8601
-    /// dates — exposed so a verifier can check a stored file is in canonical
-    /// form and a CLI can emit records in the same shape.
-    public static func canonicalData(of record: RunRecord) throws -> Data {
+    /// Writes the tool-owned results tree as `results.json` beside the
+    /// record (R56 — the record itself is the provenance frame and nothing
+    /// else); returns its URL.
+    @discardableResult
+    public func writeResults(_ results: JSONValue, for id: UUID) throws -> URL {
+        let dir = directory(for: id)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("results.json")
+        try Self.canonicalData(of: results).write(to: url, options: .atomic)
+        return url
+    }
+
+    /// The run's `results.json` as parsed; nil when the run wrote none.
+    public func readResults(id: UUID) throws -> JSONValue? {
+        let url = directory(for: id).appendingPathComponent("results.json")
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
+
+    /// The one serialisation the store produces — pretty, sorted keys,
+    /// ISO8601 dates — exposed so a verifier can check a stored file is in
+    /// canonical form and a CLI can emit records in the same shape.
+    public static func canonicalData(of value: some Encodable) throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        return try encoder.encode(record)
+        return try encoder.encode(value)
     }
 
     public func read(id: UUID) throws -> RunRecord {

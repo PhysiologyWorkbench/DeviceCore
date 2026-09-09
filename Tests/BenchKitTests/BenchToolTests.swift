@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import DeviceCore
 @testable import BenchKit
 
 /// A tool that writes one capture and reports what it was handed.
@@ -34,28 +35,46 @@ private struct BrokenTool: BenchTool {
 @Suite struct BenchToolTests {
     let store: RunRecordStore
     let runner: BenchToolRunner
+    let host = PhysicalUnit(role: .host, claims: ["apple.model": "Mac15,6"])
 
     init() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("BenchToolTests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         store = RunRecordStore(root: root)
-        runner = BenchToolRunner(store: store, commit: "0123abc-dirty")
+        runner = BenchToolRunner(store: store,
+                                 commits: ["PWB": "0123abc-dirty", "DeviceCore": "77aa88b"],
+                                 host: host)
     }
 
     @Test func wrapsAToolRunInTheProvenanceFrame() async throws {
         let record = try await runner.run(EchoTool(), arguments: ["target": "F0:12:34"],
-                                          unit: "Pine64 PineTime")
-        #expect(record.tool == "wire.echo")
-        #expect(record.commit == "0123abc-dirty")
-        #expect(record.unit == "Pine64 PineTime")
+                                          unitLabel: "Pine64 PineTime")
+        #expect(record.toolName == "wire.echo")
+        #expect(record.commits == ["PWB": "0123abc-dirty", "DeviceCore": "77aa88b"])
+        #expect(record.units == [PhysicalUnit(role: .dut, label: "Pine64 PineTime"), host])
         #expect(record.arguments == ["target": "F0:12:34"])
         #expect(record.outcome == .pass)
-        #expect(record.captures == ["advertisements.jsonl"])
-        #expect(record.results == .object(["target": .string("F0:12:34")]))
+        #expect(record.captureFiles == ["advertisements.jsonl"])
         #expect(record.started <= record.ended)
         #expect(record.origin == nil)
-        #expect(try store.read(id: record.id) == record)
+        #expect(try store.read(id: record.runUUID) == record)
+        #expect(try store.readResults(id: record.runUUID)
+            == .object(["target": .string("F0:12:34")]))
+    }
+
+    @Test func aUnitLabelLandsOnTheToolsOwnDutRow() {
+        let surveyed = PhysicalUnit(role: .dut, claims: ["ble.name": "InfiniTime"])
+        let composed = BenchToolRunner.units(
+            of: BenchToolOutput(outcome: .pass, units: [surveyed]),
+            host: host, label: "PineTime")
+        #expect(composed == [
+            PhysicalUnit(role: .dut, label: "PineTime", claims: ["ble.name": "InfiniTime"]),
+            host,
+        ])
+        let unlabelled = BenchToolRunner.units(
+            of: BenchToolOutput(outcome: .pass, units: [surveyed]), host: host, label: nil)
+        #expect(unlabelled == [surveyed, host])
     }
 
     @Test func refusesAMissingRequiredArgumentWithoutMintingARun() async throws {
@@ -75,13 +94,13 @@ private struct BrokenTool: BenchTool {
     @Test func foldsAThrownErrorIntoAnErrorRecord() async throws {
         let record = try await runner.run(BrokenTool())
         #expect(record.outcome == .error)
-        #expect(record.captures == ["partial.csv"])
-        guard case .object(let results) = record.results else {
+        #expect(record.captureFiles == ["partial.csv"])
+        guard case .object(let results)? = try store.readResults(id: record.runUUID) else {
             Issue.record("results not an object")
             return
         }
         #expect(results["error"] != nil)
-        #expect(try store.read(id: record.id) == record)
+        #expect(try store.read(id: record.runUUID) == record)
     }
 
     @Test func registryMergesCataloguesNameSortedAndDispatches() throws {
@@ -112,17 +131,27 @@ private struct BrokenTool: BenchTool {
         // R54: the stamp marks the exception only — a bench-made record.json
         // must not even mention "origin".
         let record = try await runner.run(EchoTool(), arguments: ["target": "F0"])
-        let url = store.directory(for: record.id).appendingPathComponent("record.json")
+        let url = store.directory(for: record.runUUID).appendingPathComponent("record.json")
         let text = String(decoding: try Data(contentsOf: url), as: UTF8.self)
         #expect(!text.contains("origin"))
 
         var stamped = record
         stamped.origin = .nonBenchImport
         try store.write(stamped)
-        let reread = try store.read(id: record.id)
+        let reread = try store.read(id: record.runUUID)
         #expect(reread.origin == .nonBenchImport)
         let stampedText = String(
             decoding: try Data(contentsOf: url), as: UTF8.self)
         #expect(stampedText.contains("\"origin\" : \"non-bench-import\""))
+    }
+
+    @Test func theLiveHostRowNamesThisMachine() {
+        let host = HostUnit.current()
+        #expect(host.role == .host)
+        #expect(host.claims["apple.model"]?.isEmpty == false)
+        #if os(macOS)
+        #expect(host.claims["apple.serial"]?.isEmpty == false)
+        #expect(host.claims["apple.platform_uuid"]?.isEmpty == false)
+        #endif
     }
 }

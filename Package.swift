@@ -13,7 +13,8 @@ let package = Package(
             name: "DeviceCore"
         ),
         .target(
-            name: "BenchKit"
+            name: "BenchKit",
+            dependencies: ["DeviceCore"]
         ),
         .testTarget(
             name: "DeviceCoreTests",
@@ -21,7 +22,7 @@ let package = Package(
         ),
         .testTarget(
             name: "BenchKitTests",
-            dependencies: ["BenchKit"]
+            dependencies: ["BenchKit", "DeviceCore"]
         )
     ]
 )
