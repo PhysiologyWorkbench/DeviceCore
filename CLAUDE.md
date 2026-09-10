@@ -12,6 +12,11 @@ it is the property that lets a vendor kit be added, replaced or dropped without
 touching this repo. If a change to this library needs the name of a device
 maker, the change belongs in a kit.
 
+This repository is public; the vendor kits above it, the apps above them and
+the **PWB** repository this file refers to for the system-wide record and the
+work queue are not yet. A reader here sees those references before the things
+they point at.
+
 ## Constraints
 
 - **macOS and iOS are both hard requirements.** iPadOS later. Everything here
@@ -35,21 +40,32 @@ Sources/DeviceCore/
                          and the `Actuator` output seam
   SafetyLimits.swift   — ceiling, rise/fall rates, input timeout; pure `step`
   HeartRate*.swift     — standard GATT heart rate (0x180D / 0x2A37)
+  Battery.swift        — standard GATT battery level (0x180F / 0x2A19)
+  DeviceInformation.swift — standard GATT Device Information (0x180A) as
+                         identity claims (PWB design/unit-identity.md)
+  DeviceType.swift     — the device-type DB's vocabulary and record shapes;
+                         the records live in the kits (PWB
+                         design/device-type-db-v0.md)
+  PhysicalUnit.swift   — one physical unit as a record names it: identity,
+                         claims, host bindings
 Sources/BenchKit/      — the second product (2026-09-09, PWB
                          design/bench-host-toolbox.md R46): the bench substrate the
-                         vendor kits' bench targets build on. So far the
-                         run-record schema — RunRecord (schemaVersion from day
-                         one), JSONValue, RunRecordStore (one directory per
-                         run UUID, git-diffable JSON). The tool skeleton and
-                         the generic wire primitives follow
-                         (benchkit-run-records-2026-09-09 on the family
-                         board). No app or shared library imports it — arch
-                         rule `benchKitStaysOutOfAppsAndLibraries`.
+                         vendor kits' bench targets build on. BenchTool /
+                         BenchCatalogue / BenchToolRunner (the tool seam and
+                         the provenance frame), RunRecord / JSONValue /
+                         RunRecordStore (one directory per run UUID,
+                         git-diffable JSON, schemaVersion from day one),
+                         HostUnit, and the generic wire layer — WireRadio
+                         (LiveWireRadio over CoreBluetooth; tests script
+                         one), WireModels, WireTools (`wire.scan`,
+                         `wire.survey`, `wire.notify`). No app or shared
+                         library imports it — arch rule
+                         `benchKitStaysOutOfAppsAndLibraries`.
 Tests/DeviceCoreTests/, Tests/BenchKitTests/
 ```
 
-`swift build` / `swift test` from the repo root. Green baseline: **91 tests**
-(61 DeviceCore + 30 BenchKit). CI runs the same two commands on `macos-15`, plus
+`swift build` / `swift test` from the repo root. Green baseline: **92 tests**
+(62 DeviceCore + 30 BenchKit). CI runs the same two commands on `macos-15`, plus
 an iOS-simulator build, since `swift test` never exercises iOS.
 
 ## Dependencies
@@ -185,15 +201,15 @@ new binary stream.
 
 ## The family board
 
-The owner-blocked queue for the whole family lives in **PWB**, at
+The owner-blocked queue for the whole family lives in **PWB** (private), at
 `../PWB/.devtool/features/` — one kanban-markdown card per task (YAML
 frontmatter, rendered by the LachyFS.kanban-markdown extension in VSCodium).
 Labels say who is blocked — `owner-bench`, `owner-decision`, `agent`, `gated` —
 and which repo owns the work.
 
-**One board, not one per repo, because the bottleneck is one person.** NOW.md
-still answers "where does this repo stand"; the board answers "where does the
-owner stand", and that question does not decompose per repo.
+**One board, not one per repo, because the bottleneck is one person.** The
+board answers "where does the owner stand", and that question does not
+decompose per repo; this repo has no NOW.md of its own.
 
 Work done from here updates the cards there:
 
@@ -202,8 +218,9 @@ Work done from here updates the cards there:
   `done/` with `completedAt` set. A board updated in a later sweep is a board
   that reports yesterday.
 - **A card is an index entry, never a copy.** The detail belongs in this repo's
-  ROADMAP.md and its other records; the card names the goal, points at that
-  section, and gives the next command. Copying detail into a card creates a
+  records — ARCHITECTURE.md, LESSONS.md, the source — and the card names the
+  goal, points at that place, and gives the next command. ROADMAP.md gives
+  broad directions only, never detail. Copying detail into a card creates a
   second source of truth that drifts from the first.
 - **Ask before adding a card.** New work appearing mid-task is normal and worth
   capturing, but what belongs on the owner's queue is the owner's judgement,
@@ -212,9 +229,10 @@ Work done from here updates the cards there:
 ## Design record
 
 `ARCHITECTURE.md` — the seams and why they are where they are.
+`ROADMAP.md` — broad directions only; the detail is on the board.
 `LESSONS.md` — dated lessons; skim before work that resembles past work.
 The system-wide picture (apps, pipeline, recording, research programmes) is in
-the **PWB** repo's ARCHITECTURE.md.
+the **PWB** repo's ARCHITECTURE.md, not yet public.
 
 ## The architecture gate
 

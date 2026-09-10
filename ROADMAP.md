@@ -1,57 +1,71 @@
 # Roadmap — DeviceCore
 
-Open work owned by this library. ARCHITECTURE.md's "Open questions" lists these
-in one line each; this file is where the work itself is described. What the
-library already does, and why, is in ARCHITECTURE.md and CLAUDE.md.
+Broad directions, not a work queue. The queue itself lives on the family's
+board, which is not public yet; what this library already does, and why, is in
+ARCHITECTURE.md. Nothing here is a commitment to a date or an order.
 
-The first entry this file would have had is already closed: the two
-request/response mechanisms that had drifted apart were merged into one
-`DeviceSession` before the split, and every vendor session and
-`HeartRateReader` is now a caller of it.
+## Where the stop authority principle actually ends
 
-## Stop authority as a whole
+Our [ARCHITECTURE](ARCHITECTURE.md#where-stop-authority-ends) aims
+to make sure all the actuators are stopped in the case of emergencies
+or other unexpected events.  However, in practice some actuators do
+not allow full control, due to their firmware design.
 
-`ControlLoop`'s reach ends at `Actuator.setVibration`, and a device whose
-firmware drives its own motor from its own sensor does not answer it — it
-acknowledges the command and keeps running, and it survives the central ceasing
-to exist. One such mode is known and documented in LovenseKit, along with a
-session call that reads it back and clears it. **Nothing calls that, deliberately.**
+Currently, every stop action in this library eventually calls
+`Actuator.setVibration(…, 0)`.
+The library has no other means to stop the actuators.
+Hence, its stop authority ends where that call's effects end.
+When the firmware drives its own motor from its own sensor and
+merely acknowledges the call and carries on,
+the library's stop is not a stop.
 
-The reason is that one known mode is one case out of an unknown number. At least
-one vendor's own application offers a setting that keeps a device running when
-Bluetooth drops, which has nothing to do with the mode we can read, and which
-command sets it — if any is reachable from a central at all — is unknown. Wiring
-in a partial guard would be worse than none: it would let an application claim
-it had checked, on a check covering one case out of a state space nobody has
-mapped.
+The direction is to map exactly the state space per vendor and device —
+which settings survive a disconnect, which can be read,
+which can be set at all —
+before the library asserts anything on connect,
+followed by extending the same question across hosts,
+once a rig spans more than one host.
 
-The work, in order: find the actual state space — which settings survive a
-disconnect, which are readable, which are settable by us at all — and only then
-decide what this library asserts on connect, and what it is entitled to promise
-its callers. It is a per-vendor investigation whose *conclusion* belongs here,
-because the guarantee it revises is this library's.
+A device whose firmware guarantees stop-on-disconnect would settle
+this issue from the side of the device.
+Our goal is to explore how this principle can be implemented with
+(custom) device firmware.
 
-Until then the honest position stands: a device left configured by another
-application may not be stoppable by this one, and the mitigation is operational
-— power-cycle a device before a session — not architectural.
+## Device knowledge as data
 
-## The write-with-response fallback in `BleConnection`
+We aim to represent devices as data, not as code.
+`DeviceTypeCatalog` and `PhysicalUnit` are the first step of moving what is
+known about a device — how it identifies itself, what it can do, what was
+measured on it — out of code and into data records.
+That knowledge should grow into a shared catalogue the family's members read
+from and write to, rather than a table each kit carries alone.
 
-Whether to keep it. The numbers are in and it is no longer a matter of taste:
-the acknowledged path sustains ~16 Hz against 81 Hz and 331 Hz unacknowledged on
-the two devices measured, so it must never be the control path. But real devices
-advertise `Write` alongside `Write Without Response`, and at least one vendor's
-own application takes the acknowledged path, so the fallback is resilience
-rather than dead code.
+## More devices behind the same seams
 
-Deciding it needs a device that *requires* the acknowledged path — none
-encountered so far — or a decision to drop the resilience on the grounds that
-none ever will.
+While everything here currently assumes BLE,
+the seams were cut so that need not stay true.
+A phone's own haptics and sensors, or a wired development board, are
+actuators and sensors too; the direction is to bring such devices in as further
+`Transport` and `Actuator` conformers, and to find out whether the four seams
+hold or where they need widening.
 
-## Deferred
+## The bench grows around the measurement
 
-- Whether an **iOS central** negotiates a shorter connection interval than the
-  30 ms macOS settles on with every device measured so far. Answered by the
-  first iOS build, not before.
-- **Reconnection and background behaviour** (CoreBluetooth state restoration) on
-  iOS/iPadOS.
+`BenchKit` began with the run record. The next layers are the tools that
+produce records, the radio primitives every vendor bench repeats, and —
+further out — a bench that borrows an app's live connections instead of
+opening its own, so that a measurement can be taken on a rig that is already
+running.
+
+## Stopping as a family pattern
+
+The hard-stop latch in `ControlLoop` is the primitive; how an operator reaches
+it from any application, on any host, with the device not necessarily in the
+foreground, is a pattern the applications share and this library should make
+easy to adopt correctly.
+
+## iOS as a first-class central
+
+The numbers this library stands on were measured with a macOS central.
+Measuring an iOS one — connection interval, reconnection, background behaviour
+— is what the first iOS application will do.

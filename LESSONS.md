@@ -13,8 +13,9 @@ the vendor detail dropped — it lives in the kit that owns the device.
 
 `DeviceSession` stored continuations and pump tasks with no `deinit`, so a
 session dropped without `stop()` left every subscriber suspended for ever — the
-hang `HeartRateReader.readings()` and `LovenseSession.depth()` inherited, and
-that the family's stream rule cannot see because neither drives a task. The
+hang `HeartRateReader.readings()` and a vendor session's sensor stream
+inherited, and that the family's stream rule cannot see because neither drives
+a task. The
 obvious fix, an actor `deinit` finishing `standing`, does not compile: the deinit
 is nonisolated and the entries were not Sendable. Making the entry a class with
 its own `deinit` dissolved the constraint instead of paying it — the array dies
