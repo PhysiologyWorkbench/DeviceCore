@@ -59,7 +59,8 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
                 if self.poweredOn {
                     self.central.scanForPeripherals(withServices: nil, options: self.scanOptions)
                 }
-                continuation.onTermination = { _ in
+                continuation.onTermination = { [weak self] _ in
+                    guard let self else { return }
                     self.queue.async {
                         guard self.scanGeneration == generation else { return }
                         self.central.stopScan()
@@ -68,6 +69,19 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
                 }
             }
         }
+    }
+
+    /// A transport that goes away ends the scan stream it was feeding. Weak
+    /// capture above is what lets this run at all — a strong one made the
+    /// continuation own the transport that owned it — and `finish()` rather than
+    /// `nil` is what the consumer needs: dropping a continuation does not
+    /// terminate its stream, it suspends the reader for ever. `central` is
+    /// captured on its own so the queue hop carries no reference to a `self`
+    /// that is already dying.
+    deinit {
+        scanContinuation?.finish()
+        let central: CBCentralManager = central
+        queue.async { central.stopScan() }
     }
 
     public func connect(_ id: PeripheralID, timeout: Duration) async throws -> DeviceConnection {
@@ -104,6 +118,15 @@ public final class BleTransport: NSObject, Transport, CBCentralManagerDelegate, 
 
     private func finishConnect(_ uuid: UUID, _ result: Result<DeviceConnection, Error>) {
         guard let waiter = connectWaiters.removeValue(forKey: uuid) else { return }
+        // The connect is resolved, so neither hook can fire again — and each
+        // captures `conn` strongly while `conn` itself stores it, so leaving them
+        // set is a cycle: every connection ever made, successful or failed, would
+        // outlive the transport's interest in it along with its peripheral, its
+        // continuations and its characteristic table. This is the single point
+        // every created connection passes through exactly once, the timeout below
+        // guaranteeing it even when the radio says nothing.
+        connections[uuid]?.onReady = nil
+        connections[uuid]?.onFailure = nil
         if case .failure = result { connections[uuid] = nil }
         waiter.resume(with: result)
     }
