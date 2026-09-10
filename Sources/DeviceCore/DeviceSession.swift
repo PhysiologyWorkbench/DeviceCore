@@ -26,11 +26,26 @@ public actor DeviceSession {
         fileprivate let token = UUID()
     }
 
-    private struct Standing {
+    /// One standing subscription's producer side. A class, not a struct, so that
+    /// its lifetime *is* the stream's: dropping a continuation does not finish
+    /// the stream — the consumer suspends for ever — and an actor's `deinit` is
+    /// nonisolated and may not touch a non-Sendable stored property, so the entry
+    /// finishes for itself. Every path that ends a subscription, including the
+    /// session being dropped without `stop`, is then the same path: the entry
+    /// goes away.
+    private final class Standing {
         let subscription: Subscription
         /// Yields the frame if it matches, and reports whether it did.
         let deliver: (Data) -> Bool
-        let finish: () -> Void
+        private let finish: () -> Void
+
+        init(subscription: Subscription, deliver: @escaping (Data) -> Bool, finish: @escaping () -> Void) {
+            self.subscription = subscription
+            self.deliver = deliver
+            self.finish = finish
+        }
+
+        deinit { finish() }
     }
 
     private struct Waiter {
@@ -47,6 +62,13 @@ public actor DeviceSession {
     private var waiter: Waiter?
 
     public init() {}
+
+    /// A session dropped without `stop` ends the same way `stop` ends it: the
+    /// pumps are cancelled here — `Task` handles are Sendable, so a nonisolated
+    /// deinit may reach them — and `standing` finishes its own streams as it dies.
+    deinit {
+        for task in sourceTasks { task.cancel() }
+    }
 
     /// Whether every attached source has finished, or `stop` was called. A session
     /// with no source yet is not done — it is waiting for one.
@@ -79,7 +101,7 @@ public actor DeviceSession {
         for task in sourceTasks { task.cancel() }
         sourceTasks = []
         liveSources = 0
-        finishStanding()
+        standing = []
         failRequest(CancellationError())
     }
 
@@ -133,7 +155,7 @@ public actor DeviceSession {
         }
         continuation.onTermination = { [weak self] _ in
             Task {
-                await self?.remove(subscription)
+                await self?.cancel(subscription)
                 await onTermination?()
             }
         }
@@ -149,8 +171,7 @@ public actor DeviceSession {
 
     /// Ends one subscription's stream. Idempotent.
     public func cancel(_ subscription: Subscription) {
-        guard let index = standing.firstIndex(where: { $0.subscription == subscription }) else { return }
-        standing.remove(at: index).finish()
+        standing.removeAll { $0.subscription == subscription }
     }
 
     // MARK: Dispatch
@@ -170,18 +191,8 @@ public actor DeviceSession {
         guard liveSources > 0 else { return }
         liveSources -= 1
         guard liveSources == 0 else { return }
-        finishStanding()
-        failRequest(TransportError.notConnected)
-    }
-
-    private func remove(_ subscription: Subscription) {
-        standing.removeAll { $0.subscription == subscription }
-    }
-
-    private func finishStanding() {
-        let entries = standing
         standing = []
-        for entry in entries { entry.finish() }
+        failRequest(TransportError.notConnected)
     }
 
     private func failRequest(_ error: Error) {

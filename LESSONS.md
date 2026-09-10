@@ -9,7 +9,20 @@ dated heading may appear in a sibling repo too, carrying that repo's bullets.
 Where a lesson was learned against a particular device, the claim is kept and
 the vendor detail dropped — it lives in the kit that owns the device.
 
-## 2026-08-02 (last) — A seam with one conformer, and where a safety constraint has to be written
+## 2026-09-10 — The `deinit` goes on the smallest owner, not the actor
+
+`DeviceSession` stored continuations and pump tasks with no `deinit`, so a
+session dropped without `stop()` left every subscriber suspended for ever — the
+hang `HeartRateReader.readings()` and `LovenseSession.depth()` inherited, and
+that the family's stream rule cannot see because neither drives a task. The
+obvious fix, an actor `deinit` finishing `standing`, does not compile: the deinit
+is nonisolated and the entries were not Sendable. Making the entry a class with
+its own `deinit` dissolved the constraint instead of paying it — the array dies
+with the actor and each entry finishes its stream. Where an actor holds a
+handle whose drop is silent, give the handle an owner small enough to have a
+plain `deinit`.
+
+## 2026-08-02 — A seam with one conformer, and where a safety constraint has to be written
 
 The vendor kits were carved out into their own modules; this library came out of
 it naming no manufacturer at all. The three things worth keeping.

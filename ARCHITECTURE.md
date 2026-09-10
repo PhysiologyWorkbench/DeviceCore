@@ -263,6 +263,16 @@ profiles to a kit.**
   synchronously pushes a `Task` into every caller; `DeviceSession`'s termination
   hook is `async` and runs on the session's own task for exactly that reason.
 - **Non-Sendable BLE types cross actors only as fresh values — or `sending`.**
+- **Dropping is a legitimate end, and the `deinit` sits on the smallest owner.**
+  A `Task` handle does not cancel on drop and an `AsyncStream` continuation
+  does not finish on drop — its consumer suspends for ever — so whatever
+  *stores* one releases it in its own `deinit` (ruled 2026-09-10; the family
+  form is PWB ARCHITECTURE.md principle 9). On an actor that owner is not the
+  actor: its `deinit` is nonisolated and may not touch non-Sendable state.
+  `DeviceSession` therefore keeps each standing subscription in a class that
+  finishes its stream as it dies, and cancels its pumps — `Task` is Sendable —
+  from the actor's own `deinit`. `stop()` stays the explicit end; a session
+  dropped without it ends the same way, silently, as `ControlLoop` already does.
 
 ## Open questions
 
