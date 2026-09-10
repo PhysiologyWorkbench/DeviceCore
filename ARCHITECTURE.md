@@ -273,6 +273,9 @@ profiles to a kit.**
   finishes its stream as it dies, and cancels its pumps — `Task` is Sendable —
   from the actor's own `deinit`. `stop()` stays the explicit end; a session
   dropped without it ends the same way, silently, as `ControlLoop` already does.
+  `BleConnection` finishes its `inbound`, `state` and `subscribe` streams the
+  same way, for the one path that reaches it unfinished: the transport dropped
+  with the link up.
 
 ## Open questions
 

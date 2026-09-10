@@ -248,6 +248,16 @@ final class BleConnection: NSObject, DeviceConnection, CBPeripheralDelegate, @un
         super.init()
     }
 
+    /// The transport keeps a connection until the central reports it gone, and
+    /// that report finishes every stream — so this runs unfinished only when the
+    /// transport itself is dropped with the link up. A dropped continuation does
+    /// not finish its stream; its consumers would suspend for ever.
+    deinit {
+        inboundContinuation.finish()
+        stateContinuation.finish()
+        subscriptions.values.forEach { $0.finish() }
+    }
+
     // MARK: Lifecycle (called by transport on queue)
 
     func centralDidConnect() {
